@@ -5740,14 +5740,9 @@ internal class EntityDebug
                 var v = (GameplayEventId)field.GetValue(component);
                 fields.AppendLine(prepend + $"{field.Name}: (EventId: {v.EventId}, GameplayEventType: {v.GameplayEventType})");
             }
-            else if (field.FieldType == typeof(int) || field.FieldType == typeof(float) || field.FieldType == typeof(string) ||
-                field.FieldType == typeof(ApplyBuffTarget) || field.FieldType == typeof(SetSpellTarget) || field.FieldType == typeof(SetEntityOwner))
-            {
-                fields.AppendLine(prepend + $"{field.Name}: {field.GetValue(component)}");
-            }
             else
             {
-                fields.AppendLine(prepend + $"{field.Name}: Unhandled {field.GetValue(component)}");           
+                fields.AppendLine(prepend + $"{field.Name}: {field.FieldType} {field.GetValue(component)}");           
             }
         }
 

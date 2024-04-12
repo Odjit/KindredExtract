@@ -117,6 +117,53 @@ public class StateCommands
                     fileName = $"TileModel_{entity.Index}_{entity.Version}.txt";
                 }
             }
+            else if (entity.Has<Buff>())
+            {
+                if (entity.Has<PrefabGUID>())
+                {
+                    var buffOn = entity.Read<Attached>().Parent;
+                    if(buffOn.Has<PlayerCharacter>())
+                        fileName = $"Buff_{entity.Index}_{entity.Version}_({entity.Read<PrefabGUID>().LookupName()} on Player {buffOn.Read<PlayerCharacter>().Name}).txt";
+                    else
+                        fileName = $"Buff_{entity.Index}_{entity.Version}_({entity.Read<PrefabGUID>().LookupName()}).txt";
+                }
+                else
+                {
+                    fileName = $"Buff_{entity.Index}_{entity.Version}.txt";
+                }
+            }
+            else if (entity.Has<AchievementClaimedElement>())
+            {
+                var userEntity = entity.Read<Attached>().Parent;
+                fileName = $"Achievements_{userEntity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
+            }
+            else if (entity.Has<UserMapZonePackedRevealElement>())
+            {
+                var userEntity = entity.Read<Attached>().Parent;
+                fileName = $"UserMapZone_{userEntity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
+            }
+            else if (entity.Has<InventoryBuffer>())
+            {
+                if (entity.Has<PrefabGUID>())
+                {
+                    fileName = $"Inventory_{entity.Index}_{entity.Version}_({entity.Read<PrefabGUID>().LookupName()}).txt";
+                }
+                else
+                {
+                    fileName = $"Inventory_{entity.Index}_{entity.Version}.txt";
+                }
+            }
+            else if (entity.Has<MapIconData>())
+            {
+                if (entity.Has<PrefabGUID>())
+                {
+                    fileName = $"MapIcon_{entity.Index}_{entity.Version}_({entity.Read<PrefabGUID>().LookupName()}).txt";
+                }
+                else
+                {
+                    fileName = $"MapIcon_{entity.Index}_{entity.Version}.txt";
+                }
+            }
         }
 
         CopyStateFileToPrev(fileName);
