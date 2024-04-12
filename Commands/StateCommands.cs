@@ -1,14 +1,16 @@
+using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Bloodstone.API;
 using KindredExtract.Commands.Converters;
 using ProjectM;
 using ProjectM.CastleBuilding;
 using ProjectM.Network;
+using ProjectM.Physics;
 using ProjectM.Tiles;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Transforms;
 using UnityEngine;
 using VampireCommandFramework;
@@ -40,77 +42,80 @@ public class StateCommands
             File.Copy(Path.Combine(StateFolder, fileName), prevFileName);
         }
     }
-    static string OutputEntityState(ChatCommandContext ctx, Entity entity)
+    static string OutputEntityState(ChatCommandContext ctx, Entity entity, string fileName=null)
     {
         Directory.CreateDirectory(StateFolder);
-        var fileName = $"Entity_{entity.Index}.txt";
-        if (entity.Has<User>())
+        if (fileName == null)
         {
-            fileName = $"User_{entity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
-        }
-        else if (entity.Has<PlayerCharacter>())
-        {
-            fileName = $"Player_{entity.Read<PlayerCharacter>().Name}_{entity.Index}_{entity.Version}.txt";
-        }
-        else if (entity.Has<CastleHeart>())
-        {
-            fileName = $"Castle_{entity.Index}_{entity.Version}.txt";
-        }
-        else if (entity.Has<Door>())
-        {
-            fileName = $"Door_{entity.Index}_{entity.Version}.txt";
-        }
-        else if (entity.Has<InventoryConnection>())
-        {
-            var ic = entity.Read<InventoryConnection>();
-            var prefabGuid = entity.Read<PrefabGUID>();
-            if (ic.InventoryOwner.Equals(Entity.Null))
-                fileName = $"Inventory_{prefabGuid.LookupName()}_{entity.Index}_{entity.Version}.txt";
-            else
-                fileName = $"Inventory_{ic.InventoryOwner.Read<PlayerCharacter>().Name}_{prefabGuid.LookupName()}_{entity.Index}_{entity.Version}.txt";
-        }
-        else if (entity.Has<VBloodProgressionUnlockData>())
-        {
-            var attach = entity.Read<Attach>();
-            var charName = attach.Parent.Read<User>().CharacterName;
+            fileName = $"Entity_{entity.Index}.txt";
+            if (entity.Has<User>())
+            {
+                fileName = $"User_{entity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
+            }
+            else if (entity.Has<PlayerCharacter>())
+            {
+                fileName = $"Player_{entity.Read<PlayerCharacter>().Name}_{entity.Index}_{entity.Version}.txt";
+            }
+            else if (entity.Has<CastleHeart>())
+            {
+                fileName = $"Castle_{entity.Index}_{entity.Version}.txt";
+            }
+            else if (entity.Has<Door>())
+            {
+                fileName = $"Door_{entity.Index}_{entity.Version}.txt";
+            }
+            else if (entity.Has<InventoryConnection>())
+            {
+                var ic = entity.Read<InventoryConnection>();
+                var prefabGuid = entity.Read<PrefabGUID>();
+                if (ic.InventoryOwner.Equals(Entity.Null))
+                    fileName = $"Inventory_{prefabGuid.LookupName()}_{entity.Index}_{entity.Version}.txt";
+                else
+                    fileName = $"Inventory_{ic.InventoryOwner.Read<PlayerCharacter>().Name}_{prefabGuid.LookupName()}_{entity.Index}_{entity.Version}.txt";
+            }
+            else if (entity.Has<VBloodProgressionUnlockData>())
+            {
+                var attach = entity.Read<Attach>();
+                var charName = attach.Parent.Read<User>().CharacterName;
 
-            fileName = $"Progression_{charName}_{entity.Index}_{entity.Version}.txt";
-        }
-        else if (entity.Has<TeamData>())
-        {
-            if (entity.Has<ClanTeam>())
-            {
-                fileName = $"Clan_{entity.Read<ClanTeam>().Name}_{entity.Index}_{entity.Version}.txt";
+                fileName = $"Progression_{charName}_{entity.Index}_{entity.Version}.txt";
             }
-            else if (entity.Has<UserTeam>())
+            else if (entity.Has<TeamData>())
             {
-                if (entity.Read<UserTeam>().UserEntity.Equals(Entity.Null))
-                    fileName = $"UserTeam_{entity.Index}_{entity.Version}.txt";
+                if (entity.Has<ClanTeam>())
+                {
+                    fileName = $"Clan_{entity.Read<ClanTeam>().Name}_{entity.Index}_{entity.Version}.txt";
+                }
+                else if (entity.Has<UserTeam>())
+                {
+                    if (entity.Read<UserTeam>().UserEntity.Equals(Entity.Null))
+                        fileName = $"UserTeam_{entity.Index}_{entity.Version}.txt";
+                    else
+                        fileName = $"UserTeam_{entity.Read<UserTeam>().UserEntity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
+                }
+                else if (entity.Has<CastleTeamData>())
+                {
+                    var castleHeart = entity.Read<CastleTeamData>().CastleHeart;
+                    if (!castleHeart.Has<UserOwner>() || castleHeart.Read<UserOwner>().Owner.GetEntityOnServer().Equals(Entity.Null))
+                        fileName = $"CastleTeam_{entity.Index}.txt";
+                    else
+                        fileName = $"CastleTeam_{castleHeart.Read<UserOwner>().Owner.GetEntityOnServer().Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
+                }
                 else
-                    fileName = $"UserTeam_{entity.Read<UserTeam>().UserEntity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
+                {
+                    fileName = $"Team_{entity.Index}_{entity.Version}.txt";
+                }
             }
-            else if (entity.Has<CastleTeamData>())
+            else if (entity.Has<TileModel>())
             {
-                var castleHeart = entity.Read<CastleTeamData>().CastleHeart;
-                if (!castleHeart.Has<UserOwner>() || castleHeart.Read<UserOwner>().Owner.GetEntityOnServer().Equals(Entity.Null))
-                    fileName = $"CastleTeam_{entity.Index}.txt";
+                if (entity.Has<PrefabGUID>())
+                {
+                    fileName = $"TileModel_{entity.Index}_{entity.Version}_({entity.Read<PrefabGUID>().LookupName()}).txt";
+                }
                 else
-                    fileName = $"CastleTeam_{castleHeart.Read<UserOwner>().Owner.GetEntityOnServer().Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
-            }
-            else
-            {
-                fileName = $"Team_{entity.Index}_{entity.Version}.txt";
-            }
-        }
-        else if (entity.Has<TileModel>())
-        {
-            if (entity.Has<PrefabGUID>())
-            {
-                fileName = $"TileModel_{entity.Index}_{entity.Version}_({entity.Read<PrefabGUID>().LookupName()}).txt";
-            }
-            else
-            {
-                fileName = $"TileModel_{entity.Index}_{entity.Version}.txt";
+                {
+                    fileName = $"TileModel_{entity.Index}_{entity.Version}.txt";
+                }
             }
         }
 
@@ -284,18 +289,40 @@ public class StateCommands
         ctx.Reply($"Entity {id} state written to {fileName}");
     }
 
-    [Command("prefab", "p", description: "Spits out entity info", adminOnly: true)]
+    [Command("prefab", description: "Spits out entity info", adminOnly: true)]
     public static void PrefabState(ChatCommandContext ctx, int id)
     {
         var collectionSystem = Core.Server.GetExistingSystem<PrefabCollectionSystem>();
         var keys = collectionSystem.PrefabGuidToNameDictionary.Keys;
+
+        if(id==-1)
+        {
+            var gameObject = new GameObject("PrefabOutputter");
+            var mb = gameObject.AddComponent<IgnorePhysicsDebugSystem>();
+            mb.StartCoroutine(OutputtingAllPrefabs(ctx, collectionSystem, gameObject).WrapToIl2Cpp());
+            return;
+        }
+
         foreach (var key in keys)
         {
             if (key.GuidHash != id) continue;
             collectionSystem.PrefabLookupMap.TryGetValue(key, out var prefab);
-            var fileName = OutputEntityState(ctx, prefab);
+            var fileName = OutputEntityState(ctx, prefab, key.LookupName()+".txt");
             ctx.Reply($"Prefab {id} {key.LookupName()} state written to {fileName}");
         }
+    }
+
+    static IEnumerator OutputtingAllPrefabs(ChatCommandContext ctx, PrefabCollectionSystem collectionSystem, GameObject gameObject)
+    {
+        var keys = collectionSystem.PrefabGuidToNameDictionary.Keys;
+        foreach (var key in keys)
+        {
+            collectionSystem.PrefabLookupMap.TryGetValue(key, out var prefab);
+            var fileName = OutputEntityState(ctx, prefab, key.LookupName() + ".txt");
+            ctx.Reply($"Prefab {key.GuidHash} {key.LookupName()} state written to {fileName}");
+            yield return null;
+        }
+        GameObject.Destroy(gameObject);
     }
 
     [Command("teams", "t", description: "Checks all the team data", adminOnly: true)]
