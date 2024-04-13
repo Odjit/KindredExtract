@@ -114,6 +114,12 @@ internal class EntityDebug
             componentData.AppendLine(RetrieveFields(entity.Read<AbilityCooldownState>()));
             checkedTypes.Add(new ComponentType(Il2CppType.Of<AbilityCooldownState>()));
         }
+        if (entity.Has<AbilityGroupResetComboState>())
+        {
+            componentData.AppendLine("  AbilityGroupResetComboState");
+            componentData.AppendLine(RetrieveFields(entity.Read<AbilityGroupResetComboState>()));
+            checkedTypes.Add(new ComponentType(Il2CppType.Of<AbilityGroupResetComboState>()));
+        }
         if (entity.Has<AbilityGroupSlot>())
         {
             componentData.AppendLine("  AbilityGroupSlot");
@@ -5643,11 +5649,12 @@ internal class EntityDebug
 
                             fields.AppendLine(prepend + $"{field.Name}: ConditionBlob");
                             fields.AppendLine(prepend + " ConditionInfo");
-                            fields.Append(RetrieveFields<ConditionInfo>(v.Info, prepend + "  "));
+                            fields.AppendLine(prepend + $"  Prefab {v.Info.Prefab.ToString()}");
+                            fields.AppendLine(prepend + $"  Component {v.Info.Component.ToString()}");
                             fields.AppendLine(prepend + " ConditionalElements");
                             for (int i = 0; i < v.Conditionals.Length; ++i)
                             {
-                                ConditionElement e = v.Conditionals[i];
+                                ConditionElement e = ((ConditionElement*)v.Conditionals.GetUnsafePtr())[i];
                                 fields.AppendLine(prepend + $"  [{i}] Source: {e.Source} Success: {e.SuccessIndex} Failure: {e.FailureIndex} Union: {e.Union}  {e}");
                             }
                         }
@@ -5729,6 +5736,11 @@ internal class EntityDebug
                 {
                     fields.AppendLine(prepend + $"{field.Name}: {entityString}");
                 }
+            }
+            else if (field.FieldType == typeof(ModificationId))
+            {
+                var v = (ModificationId)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: {(v.IsEmpty() ? "Unset" : v.Id)}");
             }
             else if (field.FieldType == typeof(CreateGameplayEventsOnSpawn))
             {

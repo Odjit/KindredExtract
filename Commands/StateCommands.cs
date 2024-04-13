@@ -47,124 +47,160 @@ public class StateCommands
         Directory.CreateDirectory(StateFolder);
         if (fileName == null)
         {
-            fileName = $"Entity_{entity.Index}.txt";
+            fileName = $"Entity_{entity.Index}_{entity.Version}";
+
+            string prefabName = "";
+            string attachedPlayerName = null;
+            string attachedPrefabName = null;
+
+            if (entity.Has<PrefabGUID>())
+            {
+                prefabName = entity.Read<PrefabGUID>().LookupName();
+                fileName = $"Entity_{prefabName}_{entity.Index}_{entity.Version}";
+            }
+            if (entity.Has<Attached>())
+            {
+                var attached = entity.Read<Attached>();
+                if (!attached.Parent.Equals(Entity.Null))
+                {
+                    if(attached.Parent.Has<PlayerCharacter>())
+                        attachedPlayerName = attached.Parent.Read<PlayerCharacter>().Name.ToString();
+                    if(attached.Parent.Has<PrefabGUID>())
+                        attachedPrefabName = attached.Parent.Read<PrefabGUID>().LookupName();
+                }
+            }
+
             if (entity.Has<User>())
             {
-                fileName = $"User_{entity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
+                fileName = $"User_{entity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}";
             }
             else if (entity.Has<PlayerCharacter>())
             {
-                fileName = $"Player_{entity.Read<PlayerCharacter>().Name}_{entity.Index}_{entity.Version}.txt";
+                fileName = $"Player_{entity.Read<PlayerCharacter>().Name}_{entity.Index}_{entity.Version}";
             }
             else if (entity.Has<CastleHeart>())
             {
-                fileName = $"Castle_{entity.Index}_{entity.Version}.txt";
+                fileName = $"Castle_{entity.Index}_{entity.Version}";
             }
             else if (entity.Has<Door>())
             {
-                fileName = $"Door_{entity.Index}_{entity.Version}.txt";
+                fileName = $"Door_{entity.Index}_{entity.Version}";
             }
             else if (entity.Has<InventoryConnection>())
             {
                 var ic = entity.Read<InventoryConnection>();
-                var prefabGuid = entity.Read<PrefabGUID>();
                 if (ic.InventoryOwner.Equals(Entity.Null))
-                    fileName = $"Inventory_{prefabGuid.LookupName()}_{entity.Index}_{entity.Version}.txt";
+                    fileName = $"Inventory_{prefabName}_{entity.Index}_{entity.Version}";
                 else
-                    fileName = $"Inventory_{ic.InventoryOwner.Read<PlayerCharacter>().Name}_{prefabGuid.LookupName()}_{entity.Index}_{entity.Version}.txt";
+                    fileName = $"Inventory_{ic.InventoryOwner.Read<PlayerCharacter>().Name}_{prefabName}_{entity.Index}_{entity.Version}";
             }
             else if (entity.Has<VBloodProgressionUnlockData>())
             {
                 var attach = entity.Read<Attach>();
                 var charName = attach.Parent.Read<User>().CharacterName;
 
-                fileName = $"Progression_{charName}_{entity.Index}_{entity.Version}.txt";
+                fileName = $"Progression_{charName}_{entity.Index}_{entity.Version}";
             }
             else if (entity.Has<TeamData>())
             {
                 if (entity.Has<ClanTeam>())
                 {
-                    fileName = $"Clan_{entity.Read<ClanTeam>().Name}_{entity.Index}_{entity.Version}.txt";
+                    fileName = $"Clan_{entity.Read<ClanTeam>().Name}_{entity.Index}_{entity.Version}";
                 }
                 else if (entity.Has<UserTeam>())
                 {
                     if (entity.Read<UserTeam>().UserEntity.Equals(Entity.Null))
-                        fileName = $"UserTeam_{entity.Index}_{entity.Version}.txt";
+                        fileName = $"UserTeam_{entity.Index}_{entity.Version}";
                     else
-                        fileName = $"UserTeam_{entity.Read<UserTeam>().UserEntity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
+                        fileName = $"UserTeam_{entity.Read<UserTeam>().UserEntity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}";
                 }
                 else if (entity.Has<CastleTeamData>())
                 {
                     var castleHeart = entity.Read<CastleTeamData>().CastleHeart;
                     if (!castleHeart.Has<UserOwner>() || castleHeart.Read<UserOwner>().Owner.GetEntityOnServer().Equals(Entity.Null))
-                        fileName = $"CastleTeam_{entity.Index}.txt";
+                        fileName = $"CastleTeam_{entity.Index}";
                     else
-                        fileName = $"CastleTeam_{castleHeart.Read<UserOwner>().Owner.GetEntityOnServer().Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
+                        fileName = $"CastleTeam_{castleHeart.Read<UserOwner>().Owner.GetEntityOnServer().Read<User>().CharacterName}_{entity.Index}_{entity.Version}";
                 }
                 else
                 {
-                    fileName = $"Team_{entity.Index}_{entity.Version}.txt";
+                    fileName = $"Team_{entity.Index}_{entity.Version}";
                 }
             }
             else if (entity.Has<TileModel>())
             {
                 if (entity.Has<PrefabGUID>())
                 {
-                    fileName = $"TileModel_{entity.Index}_{entity.Version}_({entity.Read<PrefabGUID>().LookupName()}).txt";
+                    fileName = $"TileModel_{entity.Index}_{entity.Version}_({prefabName})";
                 }
                 else
                 {
-                    fileName = $"TileModel_{entity.Index}_{entity.Version}.txt";
+                    fileName = $"TileModel_{entity.Index}_{entity.Version}";
                 }
             }
             else if (entity.Has<Buff>())
             {
-                if (entity.Has<PrefabGUID>())
+                if (prefabName != "")
                 {
-                    var buffOn = entity.Read<Attached>().Parent;
-                    if(buffOn.Has<PlayerCharacter>())
-                        fileName = $"Buff_{entity.Index}_{entity.Version}_({entity.Read<PrefabGUID>().LookupName()} on Player {buffOn.Read<PlayerCharacter>().Name}).txt";
+                    if(attachedPlayerName != null)
+                        fileName = $"Buff_{entity.Index}_{entity.Version}_({prefabName} on Player {attachedPlayerName})";
+                    else if(attachedPrefabName != null)
+                        fileName = $"Buff_{entity.Index}_{entity.Version}_({prefabName} on {attachedPrefabName})";
                     else
-                        fileName = $"Buff_{entity.Index}_{entity.Version}_({entity.Read<PrefabGUID>().LookupName()}).txt";
+                        fileName = $"Buff_{entity.Index}_{entity.Version}_({prefabName})";
                 }
                 else
                 {
-                    fileName = $"Buff_{entity.Index}_{entity.Version}.txt";
+                    fileName = $"Buff_{entity.Index}_{entity.Version}";
                 }
             }
             else if (entity.Has<AchievementClaimedElement>())
             {
                 var userEntity = entity.Read<Attached>().Parent;
-                fileName = $"Achievements_{userEntity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
+                fileName = $"Achievements_{userEntity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}";
             }
             else if (entity.Has<UserMapZonePackedRevealElement>())
             {
                 var userEntity = entity.Read<Attached>().Parent;
-                fileName = $"UserMapZone_{userEntity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}.txt";
+                fileName = $"UserMapZone_{userEntity.Read<User>().CharacterName}_{entity.Index}_{entity.Version}";
             }
             else if (entity.Has<InventoryBuffer>())
             {
-                if (entity.Has<PrefabGUID>())
+
+                fileName = $"Inventory_{entity.Index}_{entity.Version}";
+                if (prefabName != "")
                 {
-                    fileName = $"Inventory_{entity.Index}_{entity.Version}_({entity.Read<PrefabGUID>().LookupName()}).txt";
-                }
-                else
-                {
-                    fileName = $"Inventory_{entity.Index}_{entity.Version}.txt";
+                    fileName = $"Inventory_{entity.Index}_{entity.Version}_({prefabName})";
                 }
             }
             else if (entity.Has<MapIconData>())
             {
-                if (entity.Has<PrefabGUID>())
+                if (prefabName != "")
                 {
-                    fileName = $"MapIcon_{entity.Index}_{entity.Version}_({entity.Read<PrefabGUID>().LookupName()}).txt";
+                    if(attachedPlayerName != null)
+                        fileName = $"MapIcon_{entity.Index}_{entity.Version}_({prefabName} on Player {attachedPlayerName})";
+                    else if(attachedPrefabName != null)
+                        fileName = $"MapIcon_{entity.Index}_{entity.Version}_({prefabName} on {attachedPrefabName})";
+                    else
+                        fileName = $"MapIcon_{entity.Index}_{entity.Version}_({prefabName})";
                 }
                 else
                 {
-                    fileName = $"MapIcon_{entity.Index}_{entity.Version}.txt";
+                    fileName = $"MapIcon_{entity.Index}_{entity.Version}";
                 }
             }
+            else if(prefabName.StartsWith("AB_"))
+            {
+                fileName = $"{prefabName}_{entity.Index}_{entity.Version}";
+                if (attachedPlayerName != null)
+                    fileName = $"{prefabName}_{entity.Index}_{entity.Version}_(Attached to Player {attachedPlayerName})";
+                else if (attachedPrefabName != null)
+                    fileName = $"{prefabName}_{entity.Index}_{entity.Version}_(Attached to {attachedPrefabName})";
+            }
         }
+
+        if(!fileName.EndsWith(".txt"))
+            fileName = fileName + ".txt";
 
         CopyStateFileToPrev(fileName);
 
@@ -337,12 +373,12 @@ public class StateCommands
     }
 
     [Command("prefab", description: "Spits out entity info", adminOnly: true)]
-    public static void PrefabState(ChatCommandContext ctx, int id)
+    public static void PrefabState(ChatCommandContext ctx, int? id=null)
     {
         var collectionSystem = Core.Server.GetExistingSystem<PrefabCollectionSystem>();
         var keys = collectionSystem.PrefabGuidToNameDictionary.Keys;
 
-        if(id==-1)
+        if(id==null)
         {
             var gameObject = new GameObject("PrefabOutputter");
             var mb = gameObject.AddComponent<IgnorePhysicsDebugSystem>();
@@ -364,10 +400,22 @@ public class StateCommands
         var keys = collectionSystem.PrefabGuidToNameDictionary.Keys;
         foreach (var key in keys)
         {
-            collectionSystem.PrefabLookupMap.TryGetValue(key, out var prefab);
-            var fileName = OutputEntityState(ctx, prefab, key.LookupName() + ".txt");
-            ctx.Reply($"Prefab {key.GuidHash} {key.LookupName()} state written to {fileName}");
-            yield return null;
+            if (collectionSystem.PrefabLookupMap.TryGetConvertedPrefab(key, PrefabLookupMap.ErrorFeedbackType.LogWarning, false, out var convertedPrefab))
+            {
+                var fileName = OutputEntityState(ctx, convertedPrefab, key.LookupName() + ".txt");
+                ctx.Reply($"Converted Prefab {key.GuidHash} {key.LookupName()} state written to {fileName}");
+                yield return null;
+            }
+            else if (collectionSystem.PrefabLookupMap.TryGetValue(key, out var prefab))
+            {
+                var fileName = OutputEntityState(ctx, prefab, key.LookupName() + ".txt");
+                ctx.Reply($"Prefab {key.GuidHash} {key.LookupName()} state written to {fileName}");
+                yield return null;
+            }
+            else
+            {
+                ctx.Reply($"Prefab doesn't exist for {key.GuidHash} {key.LookupName()}");
+            }
         }
         GameObject.Destroy(gameObject);
     }
