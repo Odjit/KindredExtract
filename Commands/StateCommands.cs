@@ -467,4 +467,21 @@ public class StateCommands
         }
         ctx.Reply($"Wrote out {num} states for Tile Models within {radius} units of {userEntity.Index}");
     }
+
+    [Command("rooms", "r", description: "Gets nearby rooms", adminOnly: true)]
+    public static void NearbyRoomStates(ChatCommandContext ctx, int radius = 10)
+    {
+        var userEntity = ctx.Event.SenderUserEntity;
+        var userPos = userEntity.Read<Translation>().Value;
+        var entities = Helper.GetEntitiesByComponentTypes<Translation, CastleRoom>(true);
+        var num = 0;
+        foreach (var entity in entities)
+        {
+            var pos = entity.Read<Translation>().Value;
+            if (Vector3.Distance(userPos, pos) > radius) continue;
+            OutputEntityState(ctx, entity);
+            num++;
+        }
+        ctx.Reply($"Wrote out {num} states within {radius} units of {userEntity.Index}");
+    }
 }

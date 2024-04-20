@@ -1,7 +1,5 @@
 
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
+using Il2CppInterop.Runtime;
 using ProjectM;
 using ProjectM.Behaviours;
 using ProjectM.CastleBuilding;
@@ -21,6 +19,10 @@ using ProjectM.Shared;
 using ProjectM.Terrain;
 using ProjectM.Tiles;
 using Stunlock.Sequencer;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Text;
 using Unity.Entities;
 using Unity.Physics;
 using Unity.Physics.Systems;
@@ -30,11 +32,6 @@ using static ProjectM.CrowdednessDropTableSettingsAsset;
 using static ProjectM.HitColliderCast;
 using static ProjectM.SharedModifiableFunctions;
 using static ProjectM.SpawnChainData;
-using Il2CppInterop.Runtime;
-using System;
-using static UnityEngine.Rendering.DebugUI;
-using Unity.Entities.UniversalDelegates;
-using Unity.Collections;
 
 namespace KindredExtract;
 
@@ -78,6 +75,12 @@ internal class EntityDebug
             componentData.AppendLine("  AbilityBarInitializationState");
             componentData.AppendLine(RetrieveFields(entity.Read<AbilityBar_Shared>()));
             checkedTypes.Add(new ComponentType(Il2CppType.Of<AbilityBarInitializationState>()));
+        }
+        if (entity.Has<AbilityBar_Server>())
+        {
+            componentData.AppendLine("  AbilityBar_Server");
+            componentData.AppendLine(RetrieveFields(entity.Read<AbilityBar_Server>()));
+            checkedTypes.Add(new ComponentType(Il2CppType.Of<AbilityBar_Server>()));
         }
         if (entity.Has<AbilityBar_Shared>())
         {
@@ -154,6 +157,12 @@ internal class EntityDebug
             componentData.AppendLine(RetrieveFields(entity.Read<AbilityGroupState>()));
             checkedTypes.Add(new ComponentType(Il2CppType.Of<AbilityGroupState>()));
         }
+        if (entity.Has<AbilityHoldToCastData>())
+        {
+            componentData.AppendLine("  AbilityHoldToCastData");
+            componentData.AppendLine(RetrieveFields(entity.Read<AbilityHoldToCastData>()));
+            checkedTypes.Add(new ComponentType(Il2CppType.Of<AbilityHoldToCastData>()));
+        }
         if (entity.Has<AbilityIgnoreSettings>())
         {
             componentData.AppendLine("  AbilityIgnoreSettings");
@@ -205,6 +214,12 @@ internal class EntityDebug
                 componentData.AppendLine(RetrieveFields(buffer[i]));
             }
             checkedTypes.Add(new ComponentType(Il2CppType.Of<AbilityStateBuffer>()));
+        }
+        if (entity.Has<AbilityTarget>())
+        {
+            componentData.AppendLine("  AbilityTarget");
+            componentData.AppendLine(RetrieveFields(entity.Read<AbilityTarget>()));
+            checkedTypes.Add(new ComponentType(Il2CppType.Of<AbilityTarget>()));
         }
         if (entity.Has<AbsorbBuff>())
         {
@@ -3051,6 +3066,12 @@ internal class EntityDebug
             componentData.AppendLine(RetrieveFields(entity.Read<NetworkedTimeout>()));
             checkedTypes.Add(new ComponentType(Il2CppType.Of<NetworkedTimeout>()));
         }
+        if (entity.Has<NeutralTeam>())
+        {
+            componentData.AppendLine("  NeutralTeam");
+            componentData.AppendLine(RetrieveFields(entity.Read<NeutralTeam>()));
+            checkedTypes.Add(new ComponentType(Il2CppType.Of<NeutralTeam>()));
+        }
         if (entity.Has<NonUniformScale>())
         {
             componentData.AppendLine("  NonUniformScale");
@@ -4907,11 +4928,23 @@ internal class EntityDebug
             componentData.AppendLine(RetrieveFields(entity.Read<TileCollisionTag>()));
             checkedTypes.Add(new ComponentType(Il2CppType.Of<TileCollisionTag>()));
         }
-        if (entity.Has<TileData>())
+        if (entity.Has<ProjectM.TileData>())
         {
             componentData.AppendLine("  TileData");
-            componentData.AppendLine(RetrieveFields(entity.Read<TileData>()));
-            checkedTypes.Add(new ComponentType(Il2CppType.Of<TileData>()));
+            var tileData = entity.Read<ProjectM.TileData>();
+            if(tileData.Data.IsCreated)
+            {
+                unsafe
+                {
+                    var tileBlob = *(ProjectM.TileBlob*)tileData.Data.GetUnsafePtr();
+                    componentData.AppendLine(RetrieveFields(tileBlob));
+                }
+            }
+            else
+            {
+                componentData.AppendLine("    TileBlob Missing");
+            }
+            checkedTypes.Add(new ComponentType(Il2CppType.Of<ProjectM.TileData>()));
         }
         if (entity.Has<TileDisabledCollisionHistoryElement>())
         {
@@ -5158,6 +5191,12 @@ internal class EntityDebug
             componentData.AppendLine("  UnitStats");
             componentData.AppendLine(RetrieveFields(entity.Read<UnitStats>()));
             checkedTypes.Add(new ComponentType(Il2CppType.Of<UnitStats>()));
+        }
+        if (entity.Has<UnitTeam>())
+        {
+            componentData.AppendLine("  UnitTeam");
+            componentData.AppendLine(RetrieveFields(entity.Read<UnitTeam>()));
+            checkedTypes.Add(new ComponentType(Il2CppType.Of<UnitTeam>()));
         }
         if (entity.Has<UnlockedAbilityElement>())
         {
@@ -5688,7 +5727,10 @@ internal class EntityDebug
                 }
                 else if (v.Has<PrefabGUID>())
                 {
-                    fields.AppendLine(prepend + $"{field.Name}: Prefab {v.Read<PrefabGUID>().LookupName()} - {entityString}");
+                    if (v.Has<Prefab>())
+                        fields.AppendLine(prepend + $"{field.Name}: Prefab {v.Read<PrefabGUID>().LookupName()} - {entityString}");
+                    else
+                        fields.AppendLine(prepend + $"{field.Name}: Entity {v.Read<PrefabGUID>().LookupName()} - {entityString}");
                 }
                 else
                 {
@@ -5709,7 +5751,10 @@ internal class EntityDebug
                 }
                 else if (v.Has<PrefabGUID>())
                 {
-                    fields.AppendLine(prepend + $"{field.Name}: Prefab {v.Read<PrefabGUID>().LookupName()} - {networkEntityString}");
+                    if (v.Has<Prefab>())
+                        fields.AppendLine(prepend + $"{field.Name}: Prefab {v.Read<PrefabGUID>().LookupName()} - {networkEntityString}");
+                    else
+                        fields.AppendLine(prepend + $"{field.Name}: Entity {v.Read<PrefabGUID>().LookupName()} - {networkEntityString}");
                 }
                 else
                 {
@@ -5719,7 +5764,7 @@ internal class EntityDebug
             else if (field.FieldType == typeof(ProjectM.ModifiableEntity))
             {
                 var v = ((ModifiableEntity)field.GetValue(component)).Value;
-                var entityString = $"Entity({v.Index}:{v.Version})";
+                var entityString = $"ModifiableEntity({v.Index}:{v.Version})";
                 if (v.Has<User>())
                 {
                     fields.AppendLine(prepend + $"{field.Name}: User {v.Read<User>().CharacterName} - {entityString}");
@@ -5730,7 +5775,10 @@ internal class EntityDebug
                 }
                 else if (v.Has<PrefabGUID>())
                 {
-                    fields.AppendLine(prepend + $"{field.Name}: Prefab {v.Read<PrefabGUID>().LookupName()} - {entityString}");
+                    if (v.Has<Prefab>())
+                        fields.AppendLine(prepend + $"{field.Name}: Prefab {v.Read<PrefabGUID>().LookupName()} - {entityString}");
+                    else
+                        fields.AppendLine(prepend + $"{field.Name}: Entity {v.Read<PrefabGUID>().LookupName()} - {entityString}");
                 }
                 else
                 {
@@ -5752,9 +5800,141 @@ internal class EntityDebug
                 var v = (GameplayEventId)field.GetValue(component);
                 fields.AppendLine(prepend + $"{field.Name}: (EventId: {v.EventId}, GameplayEventType: {v.GameplayEventType})");
             }
+            else if (field.FieldType == typeof(TilePivotSettings))
+            {
+                var v = (TilePivotSettings)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: {v.PivotType} - {v.CustomPivotPoint}");
+            }
+            else if (field.FieldType == typeof(TileDatas<CollisionData>))
+            {
+                var v = (TileDatas<CollisionData>)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: [");
+                for (var i = 0; i < v.Tiles.Length; ++i)
+                {
+                    unsafe
+                    {
+                        var tile = ((TileDatas<CollisionData>.DataStruct*)v.Tiles.GetUnsafePtr())[i];
+                        fields.AppendLine(prepend + $"  ({tile.Tile.x}, {tile.Tile.y}) - {tile.Data.CollisionFlags}");
+                    }
+                }
+                fields.AppendLine(prepend + $"]");
+            }
+            else if (field.FieldType == typeof(TileDatas<TileHeightData>))
+            {
+                var v = (TileDatas<TileHeightData>)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: [");
+                for (var i = 0; i < v.Tiles.Length; ++i)
+                {
+                    unsafe
+                    {
+                        var tile = ((TileDatas<TileHeightData>.DataStruct*)v.Tiles.GetUnsafePtr())[i];
+                        fields.AppendLine(prepend + $"  ({tile.Tile.x}, {tile.Tile.y}) - {tile.Data.Height}");
+                    }
+                }
+                fields.AppendLine(prepend + $"]");
+            }
+            else if (field.FieldType == typeof(TileDatas<SurfaceFluffData>))
+            {
+                var v = (TileDatas<SurfaceFluffData>)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: [");
+                for (var i = 0; i < v.Tiles.Length; ++i)
+                {
+                    unsafe
+                    {
+                        var tile = ((TileDatas<SurfaceFluffData>.DataStruct*)v.Tiles.GetUnsafePtr())[i];
+                        fields.AppendLine(prepend + $"  ({tile.Tile.x}, {tile.Tile.y}) - {tile.Data.FluffAllowance}");
+                    }
+                }
+                fields.AppendLine(prepend + $"]");
+            }
+            else if (field.FieldType == typeof(BlobAssetReference<WallpaperStyleBlob>))
+            {
+                var b = (BlobAssetReference<WallpaperStyleBlob>)field.GetValue(component);
+                if (b.IsCreated)
+                {
+                    unsafe
+                    {
+                        var v = *(WallpaperStyleBlob*)b.m_data.m_Ptr;
+
+                        fields.AppendLine(prepend + $"{field.Name}: WallpaperStyleBlob");
+                        fields.AppendLine(prepend + $"  Styles: [");
+                        for (var i = 0; i < v.Styles.Length; ++i)
+                        {
+                            unsafe
+                            {
+                                var style = ((WallpaperStyleData*)v.Styles.GetUnsafePtr())[i];
+                                fields.AppendLine(prepend + $"    {style.ParentBlueprintGUID.LookupName()} - {style.MeshVariationIndex} {style.MeshVariationGUID.LookupName()}");
+                            }
+                        }
+                        fields.AppendLine(prepend + $"  ]");
+
+                        fields.AppendLine(prepend + $"  MeshVariationsByIndex: [");
+                        for (var i = 0; i < v.MeshVariationsByIndex.Length; ++i)
+                        {
+                            unsafe
+                            {
+                                var meshVariation = ((PrefabGUID*)v.MeshVariationsByIndex.GetUnsafePtr())[i];
+                                fields.AppendLine(prepend + $"    [{i}] {meshVariation.LookupName()}");
+                            }
+                        }
+                        fields.AppendLine(prepend + $"  ]");
+                    }
+                }
+                else
+                {
+                    fields.AppendLine(prepend + $"{field.Name}: None");
+                }
+            }
+            else if (field.FieldType == typeof(Il2CppSystem.Nullable_Unboxed<HeightPlacementConfig>))
+            {
+                var v = (Il2CppSystem.Nullable_Unboxed<HeightPlacementConfig>)field.GetValue(component);
+                if (v.HasValue)
+                {
+                    fields.AppendLine(prepend + $"{field.Name}:");
+                    fields.AppendLine(RetrieveFields(v.Value, prepend + "  "));
+                }
+                else
+                {
+                    fields.AppendLine(prepend + $"{field.Name}: None");
+                }
+            }
+            else if (field.FieldType == typeof(WallpaperOrientationData))
+            {
+                var v = (WallpaperOrientationData)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}:");
+                fields.Append(RetrieveFields(v, prepend + "  "));
+            }
+            else if (field.FieldType == typeof(WallpaperOrientationData.Indices))
+            {
+                var v = (WallpaperOrientationData.Indices)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}:");
+                fields.Append(RetrieveFields(v, prepend + "  "));
+            }
+            else if (field.FieldType == typeof(WallpaperOrientation))
+            {
+                var v = (WallpaperOrientation)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}:");
+                fields.Append(RetrieveFields(v, prepend + "  "));
+            }
+            else if (field.FieldType == typeof(BlobAssetReference<SpawnChainBlobAsset>))
+            {
+                var b = (BlobAssetReference<SpawnChainBlobAsset>)field.GetValue(component);
+                if (b.IsCreated)
+                {
+                    unsafe
+                    {
+                        var v = *(SpawnChainBlobAsset*)b.m_data.m_Ptr;
+                        fields.AppendLine(prepend + $"{field.Name}: SpawnChainBlobAsset(main {v.MainElementIndex} out of {v.ChainElements.Length})");
+                    }
+                }
+            }
+            else if (field.FieldType.AssemblyQualifiedName.StartsWith("System"))
+            {
+                fields.AppendLine(prepend + $"{field.Name}: {field.GetValue(component)}");
+            }
             else
             {
-                fields.AppendLine(prepend + $"{field.Name}: {field.FieldType} {field.GetValue(component)}");           
+                fields.AppendLine(prepend + $"{field.Name}: {field.FieldType} {field.GetValue(component)}");
             }
         }
 
