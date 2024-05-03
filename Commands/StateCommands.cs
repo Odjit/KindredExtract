@@ -9,6 +9,7 @@ using ProjectM.Tiles;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using Unity.Entities;
 using Unity.Transforms;
@@ -196,6 +197,11 @@ public class StateCommands
                     fileName = $"{prefabName}_{entity.Index}_{entity.Version}_(Attached to Player {attachedPlayerName})";
                 else if (attachedPrefabName != null)
                     fileName = $"{prefabName}_{entity.Index}_{entity.Version}_(Attached to {attachedPrefabName})";
+            }
+            else if(entity.Has<CastleTerritory>())
+            {
+                var ct = entity.Read<CastleTerritory>();
+                fileName = $"CastleTerritory_{ct.CastleTerritoryIndex}_{entity.Index}_{entity.Version}";
             }
         }
 
@@ -483,5 +489,31 @@ public class StateCommands
             num++;
         }
         ctx.Reply($"Wrote out {num} states within {radius} units of {userEntity.Index}");
+    }
+
+    [Command("castleterritory", "ct", description: "Outputs a particular or all castle territory", adminOnly: true)]
+    public static void CastleTerritoryState(ChatCommandContext ctx, int? id = null)
+    {
+        var entities = Helper.GetEntitiesByComponentType<CastleTerritory>(true);
+        if (id == null)
+        {
+            foreach (var entity in entities)
+            {
+                OutputEntityState(ctx, entity);
+            }
+            ctx.Reply($"{entities.Length} castle territories written to files");
+        }
+        else
+        {
+
+            var entity = entities.ToArray().FirstOrDefault(e => e.Read<CastleTerritory>().CastleTerritoryIndex == id);
+            if (entity.Equals(Entity.Null))
+            {
+                ctx.Reply($"No castle territory found with id {id}");
+                return;
+            }
+            OutputEntityState(ctx, entity);
+            ctx.Reply($"Castle territory {id} state written to file");
+        }
     }
 }

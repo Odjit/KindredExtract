@@ -32,6 +32,7 @@ using static ProjectM.CrowdednessDropTableSettingsAsset;
 using static ProjectM.HitColliderCast;
 using static ProjectM.SharedModifiableFunctions;
 using static ProjectM.SpawnChainData;
+using static ProjectM.Terrain.TerritorySpawnSystem;
 
 namespace KindredExtract;
 
@@ -1246,6 +1247,12 @@ internal class EntityDebug
             }
             checkedTypes.Add(new ComponentType(Il2CppType.Of<CastleTeleporterElement>()));
         }
+        if (entity.Has<CastleTerritory>())
+        {
+            componentData.AppendLine("  CastleTerritory");
+            componentData.AppendLine(RetrieveFields(entity.Read<CastleTerritory>()));
+            checkedTypes.Add(new ComponentType(Il2CppType.Of<CastleTerritory>()));
+        }
         if (entity.Has<CastleTerritoryBlocks>())
         {
             componentData.AppendLine("  CastleTerritoryBlocks");
@@ -1289,11 +1296,7 @@ internal class EntityDebug
         {
             componentData.AppendLine("  CastleTerritoryTiles");
             var buffer = ReadBuffer<CastleTerritoryTiles>(entity);
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                componentData.AppendLine($"   [{i}]");
-                componentData.AppendLine(RetrieveFields(buffer[i]));
-            }
+            componentData.AppendLine($"   Length: {buffer.Length}");
             checkedTypes.Add(new ComponentType(Il2CppType.Of<CastleTerritoryTiles>()));
         }
         if (entity.Has<CastleWall>())
@@ -2785,6 +2788,12 @@ internal class EntityDebug
                 componentData.AppendLine(RetrieveFields(buffer[i]));
             }
             checkedTypes.Add(new ComponentType(Il2CppType.Of<LinkedEntityGroup>()));
+        }
+        if (entity.Has<LoadedCastleTerritory>())
+        {
+            componentData.AppendLine("  LoadedCastleTerritory");
+            componentData.AppendLine(RetrieveFields(entity.Read<LoadedCastleTerritory>()));
+            checkedTypes.Add(new ComponentType(Il2CppType.Of<LoadedCastleTerritory>()));
         }
         if (entity.Has<LocalToWorld>())
         {
@@ -4890,6 +4899,12 @@ internal class EntityDebug
                 componentData.AppendLine(RetrieveFields(buffer[i]));
             }
             checkedTypes.Add(new ComponentType(Il2CppType.Of<TechUnlockAbilityBuffer>()));
+        }
+        if (entity.Has<TerritoryWorldRegion>())
+        {
+            componentData.AppendLine("  TerritoryWorldRegion");
+            componentData.AppendLine(RetrieveFields(entity.Read<TerritoryWorldRegion>()));
+            checkedTypes.Add(new ComponentType(Il2CppType.Of<TerritoryWorldRegion>()));
         }
         if (entity.Has<Throw_Prefabs_To_Spawn>())
         {
