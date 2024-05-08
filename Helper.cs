@@ -1,23 +1,17 @@
-using Bloodstone.API;
 using Il2CppInterop.Runtime;
-using Il2CppSystem;
 using ProjectM;
 using ProjectM.Shared;
+using Stunlock.Core;
+using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Transforms;
-using VampireCommandFramework;
-using System.Collections.Generic;
-using KindredExtract.Data;
-using System.Linq;
 
 namespace KindredExtract;
 
 // This is an anti-pattern, move stuff away from Helper not into it
 internal static partial class Helper
 {
-    public static AdminAuthSystem adminAuthSystem = VWorld.Server.GetExistingSystem<AdminAuthSystem>();
+    public static AdminAuthSystem adminAuthSystem = Core.Server.GetExistingSystemManaged<AdminAuthSystem>();
 
     public static PrefabGUID GetPrefabGUID(Entity entity)
     {
@@ -29,7 +23,7 @@ internal static partial class Helper
         }
         catch
         {
-            guid.GuidHash = 0;
+            guid = new PrefabGUID(0);
         }
         return guid;
     }
@@ -39,7 +33,7 @@ internal static partial class Helper
     {
         try
         {
-            var gameData = Core.Server.GetExistingSystem<GameDataSystem>();
+            var gameData = Core.Server.GetExistingSystemManaged<GameDataSystem>();
             var itemSettings = AddItemSettings.Create(Core.EntityManager, gameData.ItemHashLookupMap);
             var inventoryResponse = InventoryUtilitiesServer.TryAddItem(itemSettings, recipient, guid, amount);
 
@@ -138,80 +132,6 @@ internal static partial class Helper
                     itemEntity.Write(durability);
                 }
             }
-        }
-    }
-
-    public static void ReviveCharacter(Entity Character, Entity User, ChatCommandContext ctx = null)
-    {
-        var health = Character.Read<Health>();
-        ctx?.Reply("TryGetbuff");
-        if (BuffUtility.TryGetBuff(Core.EntityManager, Character, Prefabs.Buff_General_Vampire_Wounded_Buff, out var buffData))
-        {
-            ctx?.Reply("Destroy");
-            DestroyUtility.Destroy(Core.EntityManager, buffData, DestroyDebugReason.TryRemoveBuff);
-
-            ctx?.Reply("Health");
-            health.Value = health.MaxHealth;
-            health.MaxRecoveryHealth = health.MaxHealth;
-            Character.Write(health);
-        }
-        if (health.IsDead)
-        {
-            ctx?.Reply("Respawn");
-            var pos = Character.Read<LocalToWorld>().Position;
-
-            Nullable_Unboxed<float3> spawnLoc = new()
-            {
-                value = pos,
-                has_value = true
-            };
-
-            ctx?.Reply("Respawn2");
-            var sbs = VWorld.Server.GetExistingSystem<ServerBootstrapSystem>();
-            var bufferSystem = VWorld.Server.GetExistingSystem<EntityCommandBufferSystem>();
-            var buffer = bufferSystem.CreateCommandBuffer();
-            ctx?.Reply("Respawn3");
-            sbs.RespawnCharacter(buffer, User,
-                customSpawnLocation: spawnLoc,
-                previousCharacter: Character);
-        }
-    }
-
-    public static void ClearExtraBuffs(Entity player)
-    {
-        var buffs = Core.EntityManager.GetBuffer<BuffBuffer>(player);
-        var stringsToIgnore = new List<string>
-        {
-            "BloodBuff",
-            "SetBonus",
-            "EquipBuff",
-            "Combat",
-            "VBlood_Ability_Replace",
-            "Shapeshift",
-            "Interact",
-            "AB_Consumable",
-        };
-
-        foreach (var buff in buffs)
-        {
-            bool shouldRemove = true;
-            foreach (string word in stringsToIgnore)
-            {
-                if (buff.PrefabGuid.LookupName().Contains(word))
-                {
-                    shouldRemove = false;
-                    break;
-                }
-            }
-            if (shouldRemove)
-            {
-                DestroyUtility.Destroy(Core.EntityManager, buff.Entity, DestroyDebugReason.TryRemoveBuff);
-            }
-        }
-        var equipment = player.Read<Equipment>();
-        if (!equipment.IsEquipped(Prefabs.Item_Cloak_Main_ShroudOfTheForest, out var _) && BuffUtility.HasBuff(Core.EntityManager, player, Prefabs.EquipBuff_ShroudOfTheForest))
-        {
-            Buffs.RemoveBuff(player, Prefabs.EquipBuff_ShroudOfTheForest);
         }
     }
 

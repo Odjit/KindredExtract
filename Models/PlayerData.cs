@@ -1,12 +1,11 @@
 using ProjectM.Network;
-using Unity.Collections;
 using Unity.Entities;
 
 namespace KindredExtract.Models;
 
-public struct PlayerData(FixedString64 characterName = default, ulong steamID = 0, bool isOnline = false, Entity userEntity = default, Entity charEntity = default)
+public struct PlayerData(string characterName = default, ulong steamID = 0, bool isOnline = false, Entity userEntity = default, Entity charEntity = default)
 {
-	public FixedString64 CharacterName { get; set; } = characterName;
+	public string CharacterName { get; set; } = characterName;
 	public ulong SteamID { get; set; } = steamID;
 	public bool IsOnline { get; set; } = isOnline;
 	public Entity UserEntity { get; set; } = userEntity;

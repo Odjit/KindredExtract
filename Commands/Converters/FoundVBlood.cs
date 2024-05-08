@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using KindredExtract.Data;
 using ProjectM;
+using Stunlock.Core;
 using VampireCommandFramework;
 
 namespace KindredExtract.Commands.Converters;
@@ -13,19 +14,19 @@ public class FoundVBloodConverter : CommandArgumentConverter<FoundVBlood>
 	{
 		{"Matka", Prefabs.CHAR_Cursed_Witch_VBlood },
 		{"Terah", Prefabs.CHAR_Geomancer_Human_VBlood },
-		{"Terah ", Prefabs.CHAR_Geomancer_Golem_VBlood }, //added a space to make the key unique
+		//{"Terah ", Prefabs.CHAR_Geomancer_Golem_VBlood }, //added a space to make the key unique
 		{"Jade", Prefabs.CHAR_VHunter_Jade_VBlood    },
 		{"Beatrice", Prefabs.CHAR_Villager_Tailor_VBlood },
 		{"Nicholaus", Prefabs.CHAR_Undead_Priest_VBlood   },
 		{"Quincey (Quincy)", Prefabs.CHAR_Bandit_Tourok_VBlood   },
 		{"Ungora (Spider)", Prefabs.CHAR_Spider_Queen_VBlood    },
 		{"Terrorclaw", Prefabs.CHAR_Winter_Yeti_VBlood },
-		{"Lidia", Prefabs.CHAR_Bandit_Deadeye_Chaosarrow_VBlood   },
+		//{"Lidia", Prefabs.CHAR_Bandit_Deadeye_Chaosarrow_VBlood   },
 		{"Goreswine", Prefabs.CHAR_Undead_BishopOfDeath_VBlood    },
 		{"Octavian", Prefabs.CHAR_Militia_Leader_VBlood  },
 		{"Leandra", Prefabs.CHAR_Undead_BishopOfShadows_VBlood  },
 		{"Rufus", Prefabs.CHAR_Bandit_Foreman_VBlood  },
-		{"Keely", Prefabs.CHAR_Bandit_Deadeye_Frostarrow_VBlood   },
+		//{"Keely", Prefabs.CHAR_Bandit_Deadeye_Frostarrow_VBlood   },
 		{"Ferocious Bear", Prefabs.CHAR_Forest_Bear_Dire_Vblood  },
 		{"Christina", Prefabs.CHAR_Militia_Nun_VBlood   },
 		{"Clive", Prefabs.CHAR_Bandit_Bomber_VBlood   },
@@ -43,7 +44,7 @@ public class FoundVBloodConverter : CommandArgumentConverter<FoundVBlood>
 		{"Tristan", Prefabs.CHAR_VHunter_Leader_VBlood  },
 		{"Errol", Prefabs.CHAR_Bandit_StoneBreaker_VBlood },
 		{"Azariel", Prefabs.CHAR_ChurchOfLight_Cardinal_VBlood   },
-		{"Wilfred", Prefabs.CHAR_WerewolfChieftain_VBlood   },
+		//{"Wilfred", Prefabs.CHAR_WerewolfChieftain_VBlood   },
 		{"Alpha Wolf", Prefabs.CHAR_Forest_Wolf_VBlood },
 		{"Meredith", Prefabs.CHAR_Militia_Longbowman_LightArrow_Vblood   },
 		{"Putrid Rat", Prefabs.CHAR_Vermin_DireRat_VBlood  },

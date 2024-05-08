@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ProjectM;
+using Stunlock.Core;
 
 namespace KindredExtract.Services;
 
@@ -9,7 +10,7 @@ internal class PrefabService
 
 	internal PrefabService()
 	{
-		var collectionSystem = Core.Server.GetExistingSystem<PrefabCollectionSystem>();
+		var collectionSystem = Core.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
 
 		var spawnable = collectionSystem.SpawnableNameToPrefabGuidDictionary;
 		Core.Log.LogDebug($"Spawnable prefabs: {spawnable.Count}");

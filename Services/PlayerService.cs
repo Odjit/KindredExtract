@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using Bloodstone.API;
 using KindredExtract.Models;
 using ProjectM;
 using ProjectM.Network;
@@ -11,7 +10,7 @@ namespace KindredExtract.Services;
 
 internal class PlayerService
 {
-	Dictionary<FixedString64, PlayerData> NamePlayerCache = new();
+	Dictionary<string, PlayerData> NamePlayerCache = new();
 	Dictionary<ulong, PlayerData> SteamPlayerCache = new();
 
 	internal bool TryFindSteam(ulong steamId, out PlayerData playerData)
@@ -19,7 +18,7 @@ internal class PlayerService
 		return SteamPlayerCache.TryGetValue(steamId, out playerData);
 	}
 
-	internal bool TryFindName(FixedString64 name, out PlayerData playerData)
+	internal bool TryFindName(string name, out PlayerData playerData)
 	{
 		return NamePlayerCache.TryGetValue(name, out playerData);
 	}
@@ -40,7 +39,7 @@ internal class PlayerService
 		foreach (var entity in userEntities)
 		{
 			var userData = Core.EntityManager.GetComponentData<User>(entity);
-			PlayerData playerData = new PlayerData(userData.CharacterName, userData.PlatformId, userData.IsConnected, entity, userData.LocalCharacter._Entity);
+			PlayerData playerData = new PlayerData(userData.CharacterName.ToString(), userData.PlatformId, userData.IsConnected, entity, userData.LocalCharacter._Entity);
 
 			NamePlayerCache.TryAdd(userData.CharacterName.ToString().ToLower(), playerData);
 			SteamPlayerCache.TryAdd(userData.PlatformId, playerData);
@@ -64,9 +63,9 @@ internal class PlayerService
 		SteamPlayerCache[userData.PlatformId] = playerData;
 	}
 
-	internal bool RenamePlayer(Entity userEntity, Entity charEntity, FixedString64 newName)
+	internal bool RenamePlayer(Entity userEntity, Entity charEntity, string newName)
 	{
-		var des = Core.Server.GetExistingSystem<DebugEventsSystem>();
+		var des = Core.Server.GetExistingSystemManaged<DebugEventsSystem>();
 		var networkId = Core.EntityManager.GetComponentData<NetworkId>(userEntity);
 		var userData = Core.EntityManager.GetComponentData<User>(userEntity);
 		var renameEvent = new RenameUserDebugEvent
@@ -87,7 +86,7 @@ internal class PlayerService
 	public static IEnumerable<Entity> GetUsersOnline()
 	{
 
-		NativeArray<Entity> _userEntities = VWorld.Server.EntityManager.CreateEntityQuery(ComponentType.ReadOnly<User>()).ToEntityArray(Allocator.Temp);
+		NativeArray<Entity> _userEntities = Core.Server.EntityManager.CreateEntityQuery(ComponentType.ReadOnly<User>()).ToEntityArray(Allocator.Temp);
 		int len = _userEntities.Length;
 		for (int i = 0; i < len; ++i)
 		{

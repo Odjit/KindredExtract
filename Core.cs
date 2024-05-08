@@ -14,8 +14,6 @@ internal static class Core
 	public static ManualLogSource Log { get; } = Plugin.LogInstance;
 	public static PlayerService Players { get; internal set; }
 
-	public static UnitSpawnerService UnitSpawner { get; internal set; }
-
 	public static PrefabService Prefabs { get; internal set; }
 
 	public static void LogException(System.Exception e, [CallerMemberName] string caller = null)
@@ -28,11 +26,12 @@ internal static class Core
 	{
 		if (_hasInitialized) return;
 
-		// TODO: probably changing when I refactor further.
 		Players = new();
-		UnitSpawner = new();
 		Prefabs = new();
-		_hasInitialized = true;
+
+        ComponentInitializer.InitializeComponents();
+
+        _hasInitialized = true;
 		Log.LogInfo($"{nameof(InitializeAfterLoaded)} completed");
 	}
 	private static bool _hasInitialized = false;

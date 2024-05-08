@@ -1,20 +1,27 @@
 using BepInEx.Unity.IL2CPP.Utils.Collections;
-using Bloodstone.API;
+using Il2CppInterop.Runtime;
 using KindredExtract.Commands.Converters;
+using Newtonsoft.Json;
 using ProjectM;
 using ProjectM.CastleBuilding;
 using ProjectM.Network;
 using ProjectM.Physics;
+using ProjectM.Terrain;
 using ProjectM.Tiles;
+using Stunlock.Core;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
+using System.Text.Json;
 using Unity.Entities;
 using Unity.Transforms;
 using UnityEngine;
 using VampireCommandFramework;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace KindredExtract.Commands;
 
@@ -43,7 +50,7 @@ public class StateCommands
             File.Copy(Path.Combine(StateFolder, fileName), prevFileName);
         }
     }
-    static string OutputEntityState(ChatCommandContext ctx, Entity entity, string fileName=null)
+    static string OutputEntityState(ChatCommandContext ctx, Entity entity, string fileName = null)
     {
         Directory.CreateDirectory(StateFolder);
         if (fileName == null)
@@ -64,9 +71,9 @@ public class StateCommands
                 var attached = entity.Read<Attached>();
                 if (!attached.Parent.Equals(Entity.Null))
                 {
-                    if(attached.Parent.Has<PlayerCharacter>())
+                    if (attached.Parent.Has<PlayerCharacter>())
                         attachedPlayerName = attached.Parent.Read<PlayerCharacter>().Name.ToString();
-                    if(attached.Parent.Has<PrefabGUID>())
+                    if (attached.Parent.Has<PrefabGUID>())
                         attachedPrefabName = attached.Parent.Read<PrefabGUID>().LookupName();
                 }
             }
@@ -143,9 +150,9 @@ public class StateCommands
             {
                 if (prefabName != "")
                 {
-                    if(attachedPlayerName != null)
+                    if (attachedPlayerName != null)
                         fileName = $"Buff_{entity.Index}_{entity.Version}_({prefabName} on Player {attachedPlayerName})";
-                    else if(attachedPrefabName != null)
+                    else if (attachedPrefabName != null)
                         fileName = $"Buff_{entity.Index}_{entity.Version}_({prefabName} on {attachedPrefabName})";
                     else
                         fileName = $"Buff_{entity.Index}_{entity.Version}_({prefabName})";
@@ -178,9 +185,9 @@ public class StateCommands
             {
                 if (prefabName != "")
                 {
-                    if(attachedPlayerName != null)
+                    if (attachedPlayerName != null)
                         fileName = $"MapIcon_{entity.Index}_{entity.Version}_({prefabName} on Player {attachedPlayerName})";
-                    else if(attachedPrefabName != null)
+                    else if (attachedPrefabName != null)
                         fileName = $"MapIcon_{entity.Index}_{entity.Version}_({prefabName} on {attachedPrefabName})";
                     else
                         fileName = $"MapIcon_{entity.Index}_{entity.Version}_({prefabName})";
@@ -190,7 +197,7 @@ public class StateCommands
                     fileName = $"MapIcon_{entity.Index}_{entity.Version}";
                 }
             }
-            else if(prefabName.StartsWith("AB_"))
+            else if (prefabName.StartsWith("AB_"))
             {
                 fileName = $"{prefabName}_{entity.Index}_{entity.Version}";
                 if (attachedPlayerName != null)
@@ -198,14 +205,24 @@ public class StateCommands
                 else if (attachedPrefabName != null)
                     fileName = $"{prefabName}_{entity.Index}_{entity.Version}_(Attached to {attachedPrefabName})";
             }
-            else if(entity.Has<CastleTerritory>())
+            else if (entity.Has<CastleTerritory>())
             {
                 var ct = entity.Read<CastleTerritory>();
                 fileName = $"CastleTerritory_{ct.CastleTerritoryIndex}_{entity.Index}_{entity.Version}";
             }
+            else if (entity.Has<MapZoneData>())
+            {
+                var mz = entity.Read<MapZoneData>();
+                fileName = $"MapZone_{mz.ZoneIndex}_{entity.Index}_{entity.Version}";
+            }
+            else if (entity.Has<WorldRegionPolygon>())
+            {
+                var wrp = entity.Read<WorldRegionPolygon>();
+                fileName = $"WorldRegionPolygon_{wrp.WorldRegion}_{entity.Index}_{entity.Version}";
+            }
         }
 
-        if(!fileName.EndsWith(".txt"))
+        if (!fileName.EndsWith(".txt"))
             fileName = fileName + ".txt";
 
         CopyStateFileToPrev(fileName);
@@ -215,7 +232,7 @@ public class StateCommands
         if (entity.Has<TeamAllies>())
         {
             // Add team allies to the entity data
-            var teamAllies = VWorld.Server.EntityManager.GetBuffer<TeamAllies>(entity);
+            var teamAllies = Core.Server.EntityManager.GetBuffer<TeamAllies>(entity);
             for (int i = 0; i < teamAllies.Length; ++i)
             {
                 if (teamAllies[i].Value.Equals(Entity.Null)) continue;
@@ -252,7 +269,7 @@ public class StateCommands
             { "api_paste_expire_date", "1H" }
         };
 
-        if(string.IsNullOrEmpty(folderName))
+        if (string.IsNullOrEmpty(folderName))
         {
             parameters.Remove("api_folder_key");
         }
@@ -315,9 +332,9 @@ public class StateCommands
         var charEntity = player?.Value.CharEntity ?? ctx.Event.SenderCharacterEntity;
 
         var inventories = Core.EntityManager.GetBuffer<InventoryInstanceElement>(charEntity);
-        foreach(var inventory in inventories)
+        foreach (var inventory in inventories)
         {
-            if(inventory.ExternalInventoryEntity.Equals(Entity.Null)) continue;
+            if (inventory.ExternalInventoryEntity.Equals(Entity.Null)) continue;
             OutputEntityState(ctx, inventory.ExternalInventoryEntity.GetEntityOnServer());
         }
 
@@ -379,12 +396,10 @@ public class StateCommands
     }
 
     [Command("prefab", description: "Spits out entity info", adminOnly: true)]
-    public static void PrefabState(ChatCommandContext ctx, int? id=null)
+    public static void PrefabState(ChatCommandContext ctx, int? id = null)
     {
-        var collectionSystem = Core.Server.GetExistingSystem<PrefabCollectionSystem>();
-        var keys = collectionSystem.PrefabGuidToNameDictionary.Keys;
-
-        if(id==null)
+        var collectionSystem = Core.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
+        if (id == null)
         {
             var gameObject = new GameObject("PrefabOutputter");
             var mb = gameObject.AddComponent<IgnorePhysicsDebugSystem>();
@@ -392,12 +407,15 @@ public class StateCommands
             return;
         }
 
-        foreach (var key in keys)
+        var key = new PrefabGUID() { _Value = id.Value };
+        if (collectionSystem._PrefabLookupMap.TryGetValue(key, out var prefab))
         {
-            if (key.GuidHash != id) continue;
-            collectionSystem.PrefabLookupMap.TryGetValue(key, out var prefab);
-            var fileName = OutputEntityState(ctx, prefab, key.LookupName()+".txt");
+            var fileName = OutputEntityState(ctx, prefab, key.LookupName() + ".txt");
             ctx.Reply($"Prefab {id} {key.LookupName()} state written to {fileName}");
+        }
+        else
+        {
+            ctx.Reply($"Prefab doesn't exist for {id}");
         }
     }
 
@@ -406,13 +424,7 @@ public class StateCommands
         var keys = collectionSystem.PrefabGuidToNameDictionary.Keys;
         foreach (var key in keys)
         {
-            if (collectionSystem.PrefabLookupMap.TryGetConvertedPrefab(key, PrefabLookupMap.ErrorFeedbackType.LogWarning, false, out var convertedPrefab))
-            {
-                var fileName = OutputEntityState(ctx, convertedPrefab, key.LookupName() + ".txt");
-                ctx.Reply($"Converted Prefab {key.GuidHash} {key.LookupName()} state written to {fileName}");
-                yield return null;
-            }
-            else if (collectionSystem.PrefabLookupMap.TryGetValue(key, out var prefab))
+            if (collectionSystem._PrefabLookupMap.TryGetValue(key, out var prefab))
             {
                 var fileName = OutputEntityState(ctx, prefab, key.LookupName() + ".txt");
                 ctx.Reply($"Prefab {key.GuidHash} {key.LookupName()} state written to {fileName}");
@@ -453,8 +465,6 @@ public class StateCommands
         }
         ctx.Reply($"Wrote out {num} states within {radius} units of {userEntity.Index}");
     }
-
-
 
     [Command("tilemodels", "tm", description: "Gets nearby tile model entities", adminOnly: true)]
     public static void NearbyTileModelStates(ChatCommandContext ctx, int radius = 10)
@@ -515,5 +525,195 @@ public class StateCommands
             OutputEntityState(ctx, entity);
             ctx.Reply($"Castle territory {id} state written to file");
         }
+    }
+
+    [Command("mapzones", "mz", description: "Outputs map zones out", adminOnly: true)]
+    public static void MapZoneState(ChatCommandContext ctx)
+    {
+        var entities = Helper.GetEntitiesByComponentType<MapZoneData>(true);
+        foreach (var entity in entities)
+        {
+            OutputEntityState(ctx, entity);
+        }
+        ctx.Reply($"{entities.Length} map zones written to files");
+    }
+
+    [Command("worldregionpolygon", "wrp", description: "Outputs all world region polygons", adminOnly: true)]
+    public static void WorldRegionPolygonState(ChatCommandContext ctx)
+    {
+        var entities = Helper.GetEntitiesByComponentType<WorldRegionPolygon>(true);
+        foreach (var entity in entities)
+        {
+            OutputEntityState(ctx, entity);
+        }
+        ctx.Reply($"{entities.Length} world region polygons written to files");
+    }
+
+    [Command("chunkportals", "cp", description: "Outputs all chunk portals", adminOnly: true)]
+    public static void ChunkPortalState(ChatCommandContext ctx)
+    {
+        var entities = Helper.GetEntitiesByComponentType<ChunkPortal>(true);
+        foreach (var entity in entities)
+        {
+            OutputEntityState(ctx, entity);
+        }
+        ctx.Reply($"{entities.Length} chunk portals written to files");
+    }
+
+    [Command("dumpprefabs", "dp", description: "Dumps all prefabs to file", adminOnly: true)]
+    public static void DumpPrefabs(ChatCommandContext ctx)
+    {
+        var alreadyAddedNames = new HashSet<string>();
+        var prefabs = new List<string>();
+        var collectionSystem = Core.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
+        foreach (var item in collectionSystem.PrefabGuidToNameDictionary)
+        {
+            var name = item.value.Replace(" ", "_").Replace(".", "_").Replace("-", "_").Replace("(", "_").Replace(")", "_");
+            var nameBeforehand = name;
+            var i = 2;
+            while (alreadyAddedNames.Contains(name))
+            {
+                name = $"{nameBeforehand}_ALREADY_EXISTS_{i++}";
+            }
+            alreadyAddedNames.Add(name);
+            prefabs.Add($"\tpublic static readonly PrefabGUID {name} = new PrefabGUID({item.Key.GuidHash});");
+        }
+        prefabs.Sort();
+        File.WriteAllLines("prefabs.txt", prefabs);
+    }
+
+    [Command("dumptypes", "dt", description: "Dumps all ECS component types to file", adminOnly: true)]
+    public static void DumpComponentTypes(ChatCommandContext ctx)
+    {
+        // Get all component types registered in the TypeManager
+        var allTypes = TypeManager.GetAllTypes();
+
+        // File path where you want to save the output
+        string filePath = "componentTypes.txt";
+
+        using (StreamWriter writer = new(filePath))
+        {
+            foreach (var typeInfo in allTypes)
+            {
+                if(typeInfo.TypeIndex == 0)
+                    continue;
+
+                // Get the actual type from the TypeInfo
+                var type = TypeManager.GetType(typeInfo.TypeIndex);
+
+                if(type==null || type.IsClass || type.IsEnum || !type.IsValueType)
+                    continue;
+
+                // Write the type's full name to the file
+                writer.WriteLine($"    \"{type.FullName.Replace("+", ".")}\",");
+            }
+        }
+    }
+
+    /*
+    [Command("dumpentityqueries", "deq", description: "Dumps all ECS entity queries to file", adminOnly: true)]
+    public static void DumpEntityQueries(ChatCommandContext ctx)
+    {
+        var sb = new System.Text.StringBuilder();
+
+        // Get all types that are a subclass of SystemBase
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            if(assembly.ToString().Contains("Unity"))
+                continue;
+            try
+            {
+                foreach (var type in assembly.GetExportedTypes())
+                {
+                    if (type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(SystemBase)))
+                    {
+                        var system = Core.Server.GetExistingSystemManaged(Il2CppType.From(type));
+                        if (system != null)
+                        {
+                            var properties = system.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                                .Where(p => p.PropertyType == typeof(EntityQuery));
+
+                            if(!properties.Any())
+                                continue;
+
+                            sb.AppendLine($"System: {type.FullName}");
+                            foreach (var property in properties)
+                            {
+                                var entityQuery = (EntityQuery)property.GetValue(system);
+                                sb.AppendLine($"  EntityQuery Property: {property.Name}");
+                                var queryDesc = entityQuery.GetEntityQueryDesc();
+                                sb.AppendLine($"    Any Components: {string.Join(", ", queryDesc.Any.Select(c => c.ToString()))}");
+                                sb.AppendLine($"    None Components: {string.Join(", ", queryDesc.None.Select(c => c.ToString()))}");
+                                sb.AppendLine($"    All Components: {string.Join(", ", queryDesc.All.Select(c => c.ToString()))}");
+                                sb.AppendLine($"    Disabled Components: {string.Join(", ", queryDesc.Disabled.Select(c => c.ToString()))}");
+                                sb.AppendLine($"    Absent Components: {string.Join(", ", queryDesc.Absent.Select(c => c.ToString()))}");
+                                sb.AppendLine($"    Present Components: {string.Join(", ", queryDesc.Present.Select(c => c.ToString()))}");
+                                sb.AppendLine($"    Options: {queryDesc.Options}");
+                            }
+                            sb.AppendLine();
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                ctx.Reply($"Error processing assembly {assembly.FullName}: {e.Message}");
+            }
+        }
+
+        File.WriteAllText("EntityQueryDescriptions.txt", sb.ToString());
+    }*/
+
+    [Command("dumpprefabjsons", "dpj", description: "Dumps all prefab names and ids to JSON files, grouped by prefix", adminOnly: true)]
+    public static void DumpPrefabJsons(ChatCommandContext ctx)
+    {
+        var collectionSystem = Core.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
+        var prefabs = collectionSystem.PrefabGuidToNameDictionary;
+
+        var prefabDictionaryByPrefix = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (prefabGuid, name) in prefabs)
+        {
+            // Prefix is either the first part of the name before an underscore or the first camel case word
+            var prefix = name.Split('_')[0];
+
+            // Next try finding prefix by finding the second uppercase letter after a lowercase
+            var foundLower = false;
+            for (int i = 1; i < prefix.Length; i++)
+            {
+                if (char.IsUpper(name[i]))
+                {
+                    if (foundLower)
+                    {
+                        prefix = name[..i];
+                        break;
+                    }
+                }
+                else
+                {
+                    foundLower = true;
+                }
+            }
+
+            if(!prefabDictionaryByPrefix.TryGetValue(prefix, out var prefixDict))
+            {
+                prefixDict = new Dictionary<string, int>();
+                prefabDictionaryByPrefix[prefix] = prefixDict;
+            }
+            prefixDict[name] = prefabGuid.GuidHash;
+        }
+
+        // Create a folder for the JSON files called prefabJsons if it doesn't exist
+        if(!Directory.Exists("prefabJsons"))
+            Directory.CreateDirectory("prefabJsons");
+
+        // Output the prefix dicts out to JSON files
+        foreach (var (prefix, prefixDict) in prefabDictionaryByPrefix)
+        {
+            var output = JsonSerializer.Serialize(prefixDict.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value),
+                                                  new JsonSerializerOptions() { WriteIndented = true});
+            File.WriteAllText($"prefabJsons/{prefix}.json", output);
+        }
+
+        ctx.Reply($"Dumped {prefabDictionaryByPrefix.Count} JSON files to prefabJsons folder");
     }
 }

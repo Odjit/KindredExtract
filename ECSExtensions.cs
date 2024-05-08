@@ -1,8 +1,8 @@
-using System;
-using System.Runtime.InteropServices;
-using Bloodstone.API;
 using Il2CppInterop.Runtime;
 using ProjectM;
+using Stunlock.Core;
+using System;
+using System.Runtime.InteropServices;
 using Unity.Entities;
 
 namespace KindredExtract;
@@ -25,7 +25,7 @@ public static class ECSExtensions
 		fixed (byte* p = byteArray)
 		{
 			// Set the component data
-			VWorld.Server.EntityManager.SetComponentDataRaw(entity, ct.TypeIndex, p, size);
+			Core.Server.EntityManager.SetComponentDataRaw(entity, ct.TypeIndex, p, size);
 		}
 	}
 
@@ -48,8 +48,11 @@ public static class ECSExtensions
 		// Get the ComponentType for T
 		var ct = new ComponentType(Il2CppType.Of<T>());
 
+		if(ct.IsZeroSized)
+			return new T();
+
 		// Get a pointer to the raw component data
-		void* rawPointer = VWorld.Server.EntityManager.GetComponentDataRawRO(entity, ct.TypeIndex);
+		void* rawPointer = Core.Server.EntityManager.GetComponentDataRawRO(entity, ct.TypeIndex);
 
         // Marshal the raw data to a T struct
         T componentData = Marshal.PtrToStructure<T>(new IntPtr(rawPointer));
@@ -60,12 +63,12 @@ public static class ECSExtensions
 	public static bool Has<T>(this Entity entity)
 	{
 		var ct = new ComponentType(Il2CppType.Of<T>());
-		return VWorld.Server.EntityManager.HasComponent(entity, ct);
+		return Core.Server.EntityManager.HasComponent(entity, ct);
 	}
 
 	public static string LookupName(this PrefabGUID prefabGuid)
 	{
-		var prefabCollectionSystem = VWorld.Server.GetExistingSystem<PrefabCollectionSystem>();
+		var prefabCollectionSystem = Core.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
 		return (prefabCollectionSystem.PrefabGuidToNameDictionary.ContainsKey(prefabGuid)
 			? prefabCollectionSystem.PrefabGuidToNameDictionary[prefabGuid] + " PrefabGuid(" + prefabGuid.GuidHash + ")" : "GUID Not Found");
 	}
@@ -73,13 +76,13 @@ public static class ECSExtensions
 	public static void Add<T>(this Entity entity)
 	{
 		var ct = new ComponentType(Il2CppType.Of<T>());
-		VWorld.Server.EntityManager.AddComponent(entity, ct);
+		Core.Server.EntityManager.AddComponent(entity, ct);
 	}
 
 	public static void Remove<T>(this Entity entity)
 	{
 		var ct = new ComponentType(Il2CppType.Of<T>());
-		VWorld.Server.EntityManager.RemoveComponent(entity, ct);
+		Core.Server.EntityManager.RemoveComponent(entity, ct);
 	}
 
 }

@@ -1,5 +1,6 @@
 using HarmonyLib;
 using ProjectM;
+using Stunlock.Network;
 
 
 namespace KindredExtract.Patches;

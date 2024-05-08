@@ -1,5 +1,6 @@
 using ProjectM;
 using ProjectM.Network;
+using Stunlock.Core;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -68,7 +69,7 @@ internal static class EntityCommands
 			name = targetEntity.Read<PrefabGUID>().LookupName();
 		}
 
-		StatChangeUtility.KillEntity(Core.EntityManager, targetEntity, ctx.Event.SenderCharacterEntity, Time.time, true);
+		StatChangeUtility.KillEntity(Core.EntityManager, targetEntity, ctx.Event.SenderCharacterEntity, Time.time, StatChangeReason.Default, true);
 
 		ctx.Reply($"Despawned {name}");
 	}
