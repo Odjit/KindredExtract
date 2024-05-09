@@ -11,6 +11,7 @@ internal static class Core
 
 	public static EntityManager EntityManager { get; } = Server.EntityManager;
 
+	public static LocalizationService Localization { get; } = new();
 	public static ManualLogSource Log { get; } = Plugin.LogInstance;
 	public static PlayerService Players { get; internal set; }
 

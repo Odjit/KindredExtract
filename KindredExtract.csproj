@@ -12,6 +12,12 @@
     <InformationalVersion>0.1.6+2.Branch.main.Sha.62bb8fcf39ee2ebe62410e48ec8f8fdc72e85b10</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Localization\English.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Localization\English.json" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="ComponentExtractors.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -590,6 +596,6 @@
 	  </Compile>
 	</ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-	  <Exec Command="copy &quot;C:\Users\odjit\Code Stuff\KindredExtract\bin\Debug\net6.0\KindredExtract.dll&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\VRisingBeta\VRising_Server\BepInEx\plugins&quot; " />
+	  <Exec Command="copy &quot;C:\Users\odjit\Code Stuff\KindredExtract\bin\Debug\net6.0\KindredExtract.dll&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\VRisingDedicatedServer\BepInEx\plugins&quot; " />
 	</Target>
 </Project>

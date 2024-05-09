@@ -6,6 +6,7 @@ using ProjectM.Shared;
 using ProjectM.Terrain;
 using ProjectM.Tiles;
 using Stunlock.Core;
+using Stunlock.Localization;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -434,6 +435,13 @@ internal class EntityDebug
             {
                 var v = (Unity.Physics.Aabb)field.GetValue(component);
                 fields.AppendLine(prepend + $"{field.Name}: Aaab({v.Min} to {v.Max})");
+            }
+            else if (field.FieldType == typeof(LocalizationKey))
+            {
+                var v = (LocalizationKey)field.GetValue(component);
+                var guid = v.Key.ToGuid().ToString();
+                var s = Core.Localization.GetLocalization(guid);
+                fields.AppendLine(prepend + $"{field.Name}: {guid} - {s}");
             }
             else if (field.FieldType.AssemblyQualifiedName.StartsWith("System"))
             {
