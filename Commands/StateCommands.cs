@@ -549,7 +549,7 @@ public class StateCommands
         ctx.Reply($"{entities.Length} world region polygons written to files");
     }
 
-    [Command("chunkportals", "cp", description: "Outputs all chunk portals", adminOnly: true)]
+  //  [Command("chunkportals", "cp", description: "Outputs all chunk portals", adminOnly: true)]
     public static void ChunkPortalState(ChatCommandContext ctx)
     {
         var entities = Helper.GetEntitiesByComponentType<ChunkPortal>(true);
