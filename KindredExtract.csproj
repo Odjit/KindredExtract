@@ -25,29 +25,52 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-	  <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.668" IncludeAssets="compile" />
-	  <PackageReference Include="BepInEx.Core" Version="6.0.0-be.668" IncludeAssets="compile" />
-	  <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
-	  <PackageReference Include="VRising.Unhollowed.Client" Version="1.0.0.*" />
-	  <PackageReference Include="VRising.VampireCommandFramework" Version="0.8.*" />
+	<None Include="SystemsQueryExtraction.cs">
+	  <DesignTime>True</DesignTime>
+	  <AutoGen>True</AutoGen>
+	  <DependentUpon>SystemsQueryExtraction.tt</DependentUpon>
+	</None>
   </ItemGroup>
-	<ItemGroup>
-	  <None Update="ComponentExtractors.tt">
-	    <Generator>TextTemplatingFileGenerator</Generator>
-	    <LastGenOutput>ComponentExtractors.cs</LastGenOutput>
-	  </None>
-	</ItemGroup>
+  <ItemGroup>
+	  <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.690" IncludeAssets="compile" />
+	  <PackageReference Include="BepInEx.Core" Version="6.0.0-be.690" IncludeAssets="compile" />
+	  <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
+	  <PackageReference Include="VRising.Unhollowed.Client" Version="1.0.2.*" />
+	  <PackageReference Include="VRising.VampireCommandFramework" Version="0.9.*" />
+  </ItemGroup>
 
 	<ItemGroup>
 	  <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="ComponentExtractors.cs">
-	    <DesignTime>True</DesignTime>
-	    <AutoGen>True</AutoGen>
-	    <DependentUpon>ComponentExtractors.tt</DependentUpon>
-	  </Compile>
+		<Compile Update="ComponentExtractors.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>ComponentExtractors.tt</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="ComponentExtractors.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>ComponentExtractors.cs</LastGenOutput>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="SystemsQueryExtraction.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>SystemsQueryExtraction.tt</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="SystemsQueryExtraction.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>SystemsQueryExtraction.cs</LastGenOutput>
+		</None>
 	</ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 	  <Exec Command="copy &quot;$(TargetPath)&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\VRisingDedicatedServer\BepInEx\plugins&quot; " />

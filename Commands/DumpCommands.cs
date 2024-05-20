@@ -1,8 +1,10 @@
-﻿using ProjectM;
+﻿using Il2CppInterop.Runtime;
+using ProjectM;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -69,59 +71,74 @@ namespace KindredExtract.Commands
             ctx.Reply($"Dumped {count} component types to {filePath}");
         }
 
-        /*
+        
         [Command("dumpentityqueries", "deq", description: "Dumps all ECS entity queries to file", adminOnly: true)]
         public static void DumpEntityQueries(ChatCommandContext ctx)
         {
-            var sb = new System.Text.StringBuilder();
+            var sb = new StringBuilder();
+            SystemsQueryExtraction.DumpAllSystemQueries(sb);
+            File.WriteAllText("EntityQueryDescriptions.txt", sb.ToString());
+        }
 
-            // Get all types that are a subclass of SystemBase
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        public static void DumpSystemQueries<T>(T system, StringBuilder sb) where T : ComponentSystemBase
+        {
+            if (system == null) return;
+            var t = system.GetType();
+            var unfilteredFields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var fields = unfilteredFields.Where(p => p.FieldType == typeof(EntityQuery));
+            var unfilitedProperties = t.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var properties = unfilitedProperties.Where(p => p.PropertyType == typeof(EntityQuery));
+
+            if (!fields.Any() && !properties.Any()) return;
+
+            sb.AppendLine($"System: {system.GetType().FullName}");
+            foreach (var field in fields)
             {
-                if(assembly.ToString().Contains("Unity"))
-                    continue;
                 try
                 {
-                    foreach (var type in assembly.GetExportedTypes())
+                    var entityQuery = (EntityQuery)field.GetValue(system);
+                    sb.AppendLine($"  EntityQuery Field: {field.Name}");
+                    if (!entityQuery.IsCacheValid)
                     {
-                        if (type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(SystemBase)))
-                        {
-                            var system = Core.Server.GetExistingSystemManaged(Il2CppType.From(type));
-                            if (system != null)
-                            {
-                                var properties = system.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                                    .Where(p => p.PropertyType == typeof(EntityQuery));
-
-                                if(!properties.Any())
-                                    continue;
-
-                                sb.AppendLine($"System: {type.FullName}");
-                                foreach (var property in properties)
-                                {
-                                    var entityQuery = (EntityQuery)property.GetValue(system);
-                                    sb.AppendLine($"  EntityQuery Property: {property.Name}");
-                                    var queryDesc = entityQuery.GetEntityQueryDesc();
-                                    sb.AppendLine($"    Any Components: {string.Join(", ", queryDesc.Any.Select(c => c.ToString()))}");
-                                    sb.AppendLine($"    None Components: {string.Join(", ", queryDesc.None.Select(c => c.ToString()))}");
-                                    sb.AppendLine($"    All Components: {string.Join(", ", queryDesc.All.Select(c => c.ToString()))}");
-                                    sb.AppendLine($"    Disabled Components: {string.Join(", ", queryDesc.Disabled.Select(c => c.ToString()))}");
-                                    sb.AppendLine($"    Absent Components: {string.Join(", ", queryDesc.Absent.Select(c => c.ToString()))}");
-                                    sb.AppendLine($"    Present Components: {string.Join(", ", queryDesc.Present.Select(c => c.ToString()))}");
-                                    sb.AppendLine($"    Options: {queryDesc.Options}");
-                                }
-                                sb.AppendLine();
-                            }
-                        }
+                        sb.AppendLine("    Invalid to use");
+                        continue;
                     }
+                    var queryDesc = entityQuery.GetEntityQueryDesc();
+                    sb.AppendLine($"    Absent Components: {string.Join(", ", queryDesc.Absent.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    All Components: {string.Join(", ", queryDesc.All.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    Any Components: {string.Join(", ", queryDesc.Any.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    Disabled Components: {string.Join(", ", queryDesc.Disabled.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    None Components: {string.Join(", ", queryDesc.None.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    Present Components: {string.Join(", ", queryDesc.Present.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    Options: {queryDesc.Options}");
                 }
-                catch (Exception e)
-                {
-                    ctx.Reply($"Error processing assembly {assembly.FullName}: {e.Message}");
-                }
+                catch (Exception e) { sb.AppendLine("    Invalid to use"); }
             }
-
-            File.WriteAllText("EntityQueryDescriptions.txt", sb.ToString());
-        }*/
+            foreach (var property in properties)
+            {
+                try
+                {
+                    var entityQuery = (EntityQuery)property.GetValue(system);
+                    sb.AppendLine($"  EntityQuery Property: {property.Name}");
+                    if (!entityQuery.IsCacheValid)
+                    {
+                        sb.AppendLine("    Invalid to use");
+                        continue;
+                    }
+                    var queryDesc = entityQuery.GetEntityQueryDesc();
+                    sb.AppendLine($"    Absent Components: {string.Join(", ", queryDesc.Absent.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    All Components: {string.Join(", ", queryDesc.All.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    Any Components: {string.Join(", ", queryDesc.Any.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    Disabled Components: {string.Join(", ", queryDesc.Disabled.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    None Components: {string.Join(", ", queryDesc.None.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    Present Components: {string.Join(", ", queryDesc.Present.Select(c => c.ToString()))}");
+                    sb.AppendLine($"    Options: {queryDesc.Options}");
+                }
+                catch (Exception e) { sb.AppendLine("    Invalid to use"); }
+            }
+            sb.AppendLine();
+            sb.AppendLine();
+        }
 
         [Command("prefabjsons", "pj", description: "Dumps all prefab names and ids to JSON files, grouped by prefix", adminOnly: true)]
         public static void DumpPrefabJsons(ChatCommandContext ctx)

@@ -1134,7 +1134,6 @@ namespace KindredExtract
             EntityDebug.RegisterExtractor<ProjectM.Network.ReceivedPacketBuffer>();
             EntityDebug.RegisterExtractor<ProjectM.Network.ReceivedPacket>();
             EntityDebug.RegisterExtractor<ProjectM.Network.PacketBookkeeperSystemData>();
-            EntityDebug.RegisterExtractor<ProjectM.Network.PrioritizeSystemData>();
             EntityDebug.RegisterExtractor<ProjectM.Network.LogPrioritization>();
             EntityDebug.RegisterExtractor<ProjectM.Network.SpellModSyncSystem_ServerData>();
             EntityDebug.RegisterExtractor<ProjectM.Network.SpellModSetAckEvent>();
