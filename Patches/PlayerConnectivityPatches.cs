@@ -70,7 +70,7 @@ public class Destroy_TravelBuffSystem_Patch
 	private static void Postfix(Destroy_TravelBuffSystem __instance)
 	{
 		if (Core.Players == null) Core.InitializeAfterLoaded();
-		var entities = __instance.__query_615927195_0.ToEntityArray(Allocator.Temp);
+		var entities = __instance.__query_615927226_0.ToEntityArray(Allocator.Temp);
 		foreach (var entity in entities)
 		{
 			PrefabGUID GUID = __instance.EntityManager.GetComponentData<PrefabGUID>(entity);

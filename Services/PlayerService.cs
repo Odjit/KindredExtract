@@ -27,14 +27,12 @@ internal class PlayerService
 	{
 		NamePlayerCache.Clear();
 		SteamPlayerCache.Clear();
-		EntityQuery query = Core.EntityManager.CreateEntityQuery(new EntityQueryDesc()
-		{
-			All = new ComponentType[]
-				{
-					ComponentType.ReadOnly<User>()
-				},
-			Options = EntityQueryOptions.IncludeDisabled
-		});
+
+		var entityQueryBuilder = new EntityQueryBuilder(Allocator.Temp);
+        entityQueryBuilder.AddAll(ComponentType.ReadOnly<User>());
+        entityQueryBuilder.WithOptions(EntityQueryOptions.IncludeDisabled);
+
+        EntityQuery query = Core.EntityManager.CreateEntityQuery(ref entityQueryBuilder);
 		var userEntities = query.ToEntityArray(Allocator.Temp);
 		foreach (var entity in userEntities)
 		{
@@ -65,7 +63,7 @@ internal class PlayerService
 
 	internal bool RenamePlayer(Entity userEntity, Entity charEntity, string newName)
 	{
-		var des = Core.Server.GetExistingSystemManaged<DebugEventsSystem>();
+		var des = Core.TheWorld.GetExistingSystemManaged<DebugEventsSystem>();
 		var networkId = Core.EntityManager.GetComponentData<NetworkId>(userEntity);
 		var userData = Core.EntityManager.GetComponentData<User>(userEntity);
 		var renameEvent = new RenameUserDebugEvent
@@ -85,8 +83,9 @@ internal class PlayerService
 	}
 	public static IEnumerable<Entity> GetUsersOnline()
 	{
-
-		NativeArray<Entity> _userEntities = Core.Server.EntityManager.CreateEntityQuery(ComponentType.ReadOnly<User>()).ToEntityArray(Allocator.Temp);
+		var entityQueryBuilder = new EntityQueryBuilder(Allocator.Temp);
+        entityQueryBuilder.AddAll(ComponentType.ReadOnly<User>());
+        NativeArray<Entity> _userEntities = Core.TheWorld.EntityManager.CreateEntityQuery(ref entityQueryBuilder).ToEntityArray(Allocator.Temp);
 		int len = _userEntities.Length;
 		for (int i = 0; i < len; ++i)
 		{

@@ -10,7 +10,7 @@ internal class PrefabService
 
 	internal PrefabService()
 	{
-		var collectionSystem = Core.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
+		var collectionSystem = Core.TheWorld.GetExistingSystemManaged<PrefabCollectionSystem>();
 
 		var spawnable = collectionSystem.SpawnableNameToPrefabGuidDictionary;
 		Core.Log.LogDebug($"Spawnable prefabs: {spawnable.Count}");

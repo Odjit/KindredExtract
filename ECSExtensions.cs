@@ -2,7 +2,9 @@ using Il2CppInterop.Runtime;
 using ProjectM;
 using Stunlock.Core;
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using Unity.Entities;
 
 namespace KindredExtract;
@@ -25,7 +27,7 @@ public static class ECSExtensions
 		fixed (byte* p = byteArray)
 		{
 			// Set the component data
-			Core.Server.EntityManager.SetComponentDataRaw(entity, ct.TypeIndex, p, size);
+			Core.TheWorld.EntityManager.SetComponentDataRaw(entity, ct.TypeIndex, p, size);
 		}
 	}
 
@@ -52,7 +54,7 @@ public static class ECSExtensions
 			return new T();
 
 		// Get a pointer to the raw component data
-		void* rawPointer = Core.Server.EntityManager.GetComponentDataRawRO(entity, ct.TypeIndex);
+		void* rawPointer = Core.TheWorld.EntityManager.GetComponentDataRawRO(entity, ct.TypeIndex);
 
         // Marshal the raw data to a T struct
         T componentData = Marshal.PtrToStructure<T>(new IntPtr(rawPointer));
@@ -63,27 +65,35 @@ public static class ECSExtensions
 	public static bool Has<T>(this Entity entity)
 	{
 		var ct = new ComponentType(Il2CppType.Of<T>());
-		return Core.Server.EntityManager.HasComponent(entity, ct);
+		return Core.TheWorld.EntityManager.HasComponent(entity, ct);
 	}
 
 	public static string LookupName(this PrefabGUID prefabGuid)
 	{
-		var prefabCollectionSystem = Core.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
-		return (prefabCollectionSystem.PrefabGuidToNameDictionary.ContainsKey(prefabGuid)
-			? prefabCollectionSystem.PrefabGuidToNameDictionary[prefabGuid] + " PrefabGuid(" + prefabGuid.GuidHash + ")" : "GUID Not Found");
+		var prefabCollectionSystem = Core.TheWorld.GetExistingSystemManaged<PrefabCollectionSystem>();
+		return (prefabCollectionSystem._PrefabLookupMap.GuidToEntityMap.ContainsKey(prefabGuid)
+			? prefabCollectionSystem._PrefabLookupMap.GetName(prefabGuid) + " PrefabGuid(" + prefabGuid.GuidHash + ")" : "GUID Not Found");
 	}
 
 	public static void Add<T>(this Entity entity)
 	{
 		var ct = new ComponentType(Il2CppType.Of<T>());
-		Core.Server.EntityManager.AddComponent(entity, ct);
+		Core.TheWorld.EntityManager.AddComponent(entity, ct);
 	}
 
 	public static void Remove<T>(this Entity entity)
 	{
 		var ct = new ComponentType(Il2CppType.Of<T>());
-		Core.Server.EntityManager.RemoveComponent(entity, ct);
+		Core.TheWorld.EntityManager.RemoveComponent(entity, ct);
 	}
 
+	public static string GetComponentString(this Entity entity)
+	{
+        var componentTypes = Core.TheWorld.EntityManager.GetComponentTypes(entity);
+		var componentNames = componentTypes.ToArray().Select(type => TypeManager.GetType(type.TypeIndex).Name);
+		componentTypes.Dispose();
+
+        return String.Join("+", componentNames);
+    }
 }
 //#pragma warning restore CS8500

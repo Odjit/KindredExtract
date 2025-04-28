@@ -26,25 +26,27 @@ internal static class EntityCommands
 
 		var pos = targetEntity.Read<Translation>().Value;
 
-		var entity = Core.EntityManager.CreateEntity(
-				ComponentType.ReadWrite<FromCharacter>(),
-				ComponentType.ReadWrite<PlayerTeleportDebugEvent>()
-			);
+		var entity = Core.EntityManager.CreateEntity(Core.EntityManager.CreateArchetype(new ComponentType[]
+				{
+					ComponentType.ReadWrite<FromCharacter>(),
+					ComponentType.ReadWrite<PlayerTeleportDebugEvent>()
+				}
+			));
 
-		Core.EntityManager.SetComponentData<FromCharacter>(entity, new()
+		Core.EntityManager.SetComponentData<FromCharacter>(entity, new FromCharacter()
 		{
 			User = ctx.Event.SenderUserEntity,
 			Character = ctx.Event.SenderCharacterEntity
 		});
 
-		Core.EntityManager.SetComponentData<PlayerTeleportDebugEvent>(entity, new()
+		Core.EntityManager.SetComponentData<PlayerTeleportDebugEvent>(entity, new PlayerTeleportDebugEvent()
 		{
 			Position = new float3(pos.x, pos.y, pos.z),
 			Target = PlayerTeleportDebugEvent.TeleportTarget.Self
 		});
 
 		var name = $"Entity({entityId}:{version})";
-		if(targetEntity.Has<PrefabGUID>())
+		if (targetEntity.Has<PrefabGUID>())
 		{
 			name = targetEntity.Read<PrefabGUID>().LookupName();
 		}
@@ -92,9 +94,18 @@ internal static class EntityCommands
 		}
 
 		targetEntity.Add<DestroyTag>();
-		if(!targetEntity.Has<DestroyData>()) targetEntity.Add<DestroyData>();
+		if (!targetEntity.Has<DestroyData>()) targetEntity.Add<DestroyData>();
 		targetEntity.Write(new DestroyData { DestroyReason = DestroyReason.Default });
 
 		ctx.Reply($"Destroyed {name}");
 	}
+
+	[Command("topcount", "tc", description: "Counts the top entities in the world")]
+    public static void TopEntityCount(ChatCommandContext ctx, int topNum=10, string filter=null)
+    {
+        foreach ((var prefabGUID, var count) in Core.CountPrefabs(topNum, filter))
+        {
+            ctx.Reply($"{prefabGUID.LookupName()} - {count}");
+        }
+    }
 }

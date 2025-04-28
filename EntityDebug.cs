@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using UnityEngine;
 
 namespace KindredExtract;
@@ -40,7 +41,7 @@ internal class EntityDebug
                     var sb = new StringBuilder();
                     sb.AppendLine($"  {typeof(T).ToString()}");
                     var buffer = ReadBuffer<T>(entity);
-                    for (int i = 0; i < Mathf.Min(buffer.Length, 36); i++)
+                    for (int i = 0; i < Mathf.Min(buffer.Length, 300); i++)
                     {
                         sb.AppendLine($"   [{i}]");
                         sb.AppendLine(RetrieveFields(buffer[i]));
@@ -70,6 +71,8 @@ internal class EntityDebug
 
     public static string RetrieveComponentData(Entity entity)
     {
+        Core.InitializeAfterLoaded();
+
 		var entityManager = Core.EntityManager;
         var componentData = new StringBuilder();
 
@@ -125,7 +128,7 @@ internal class EntityDebug
         return componentData.ToString();
     }
 
-    static string RetrieveFields<T>(T component, string prepend= "    ")
+    public static string RetrieveFields<T>(T component, string prepend= "    ")
     {
         StringBuilder fields = new();
         FieldInfo[] fieldInfos = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance);
@@ -442,6 +445,87 @@ internal class EntityDebug
                 var guid = v.Key.ToGuid().ToString();
                 var s = Core.Localization.GetLocalization(guid);
                 fields.AppendLine(prepend + $"{field.Name}: {guid} - {s}");
+            }
+            else if (field.FieldType == typeof(EquipmentSlot))
+            {
+                var v = (EquipmentSlot)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}:");
+                fields.AppendLine(RetrieveFields(v, prepend + "  "));
+
+            }
+            else if (field.FieldType == typeof(SequenceGUID))
+            {
+                SequenceGUID v = (SequenceGUID)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: SequenceGUID {v.GuidHash}");
+            }
+            else if (field.FieldType == typeof(BlobAssetReference<SpellModSetGeneratorBlob>))
+            {
+                var b = (BlobAssetReference<SpellModSetGeneratorBlob>)field.GetValue(component);
+                if (b.IsCreated)
+                {
+                    unsafe
+                    {
+                        var v = *(SpellModSetGeneratorBlob*)b.m_data.m_Ptr;
+
+                        fields.AppendLine(prepend + $"{field.Name}: SpellModSetGeneratorBlob");
+                        fields.Append(RetrieveFields(v, prepend + "  "));
+                    }
+                }
+            }
+            else if (field.FieldType == typeof(GenerateSpellModSetInput))
+            {
+                var v = (GenerateSpellModSetInput)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: GenerateSpellModSetInput");
+                fields.AppendLine(RetrieveFields(v, prepend + "  "));
+            }
+            else if (field.FieldType == typeof(SpellModSet))
+            {
+                var v = (SpellModSet)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: SpellModSet");
+                fields.AppendLine(RetrieveFields(v, prepend + "  "));
+            }
+            else if (field.FieldType == typeof(SpellMod))
+            {
+                var v = (SpellMod)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: SpellMod");
+                fields.AppendLine(RetrieveFields(v, prepend + "  "));
+            }
+            else if (field.FieldType == typeof(DurabilityDamageModifiers))
+            {
+                var v = (DurabilityDamageModifiers)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: DurabilityDamageModifiers");
+                fields.AppendLine(RetrieveFields(v, prepend + "  "));
+            }
+            else if (field.FieldType == typeof(Item_DurabilitySettings))
+            {
+                var v = (Item_DurabilitySettings)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: Item_DurabilitySettings");
+                fields.AppendLine(RetrieveFields(v, prepend + "  "));
+            }
+            else if (field.FieldType == typeof(SequenceState))
+            {
+                var v = (SequenceState)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: SequenceState");
+                fields.AppendLine(RetrieveFields(v, prepend + "  "));
+            }
+            else if (field.FieldType == typeof(BlobAssetReference<StaticHierarchyBlobAsset>))
+            {
+                var b = (BlobAssetReference<StaticHierarchyBlobAsset>)field.GetValue(component);
+                if (b.IsCreated)
+                {
+                    unsafe
+                    {
+                        var v = *(StaticHierarchyBlobAsset*)b.m_data.m_Ptr;
+
+                        fields.AppendLine(prepend + $"{field.Name}: StaticHierarchyBlobAsset");
+                        fields.Append(RetrieveFields(v, prepend + "  "));
+                    }
+                }
+            }
+            else if (field.FieldType == typeof(ModifiablePrefabGUID))
+            {
+                var v = (ModifiablePrefabGUID)field.GetValue(component);
+                fields.AppendLine(prepend + $"{field.Name}: ModifiablePrefabGUID {v._Value}");
             }
             else if (field.FieldType.AssemblyQualifiedName.StartsWith("System"))
             {

@@ -1,5 +1,8 @@
-﻿using Il2CppInterop.Runtime;
-using ProjectM;
+﻿using ProjectM;
+using ProjectM.Shared;
+using ProjectM.UI;
+using Stunlock.Core;
+using Stunlock.Localization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,8 +10,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
+using Unity.Collections;
 using Unity.Entities;
+using Unity.Transforms;
 using VampireCommandFramework;
 
 namespace KindredExtract.Commands
@@ -22,10 +26,11 @@ namespace KindredExtract.Commands
         {
             var alreadyAddedNames = new HashSet<string>();
             var prefabs = new List<string>();
-            var collectionSystem = Core.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
-            foreach (var item in collectionSystem.PrefabGuidToNameDictionary)
+            var collectionSystem = Core.TheWorld.GetExistingSystemManaged<PrefabCollectionSystem>();
+            foreach (var prefabGuid in collectionSystem._PrefabLookupMap.GuidToEntityMap.GetKeyArray(Allocator.Temp))
             {
-                var name = item.value.Replace(" ", "_").Replace(".", "_").Replace("-", "_").Replace("(", "_").Replace(")", "_");
+                var name = collectionSystem._PrefabLookupMap.GetName(prefabGuid);
+                name = name.Replace(" ", "_").Replace(".", "_").Replace("-", "_").Replace("(", "_").Replace(")", "_");
                 var nameBeforehand = name;
                 var i = 2;
                 while (alreadyAddedNames.Contains(name))
@@ -33,7 +38,7 @@ namespace KindredExtract.Commands
                     name = $"{nameBeforehand}_ALREADY_EXISTS_{i++}";
                 }
                 alreadyAddedNames.Add(name);
-                prefabs.Add($"\tpublic static readonly PrefabGUID {name} = new PrefabGUID({item.Key.GuidHash});");
+                prefabs.Add($"\tpublic static readonly PrefabGUID {name} = new PrefabGUID({prefabGuid.GuidHash});");
             }
             prefabs.Sort();
             File.WriteAllLines("prefabs.txt", prefabs);
@@ -71,8 +76,8 @@ namespace KindredExtract.Commands
             ctx.Reply($"Dumped {count} component types to {filePath}");
         }
 
-        
-        [Command("dumpentityqueries", "deq", description: "Dumps all ECS entity queries to file", adminOnly: true)]
+
+        [Command("entityqueries", "eq", description: "Dumps all ECS entity queries to file", adminOnly: true)]
         public static void DumpEntityQueries(ChatCommandContext ctx)
         {
             var sb = new StringBuilder();
@@ -112,7 +117,7 @@ namespace KindredExtract.Commands
                     sb.AppendLine($"    Present Components: {string.Join(", ", queryDesc.Present.Select(c => c.ToString()))}");
                     sb.AppendLine($"    Options: {queryDesc.Options}");
                 }
-                catch (Exception e) { sb.AppendLine("    Invalid to use"); }
+                catch (Exception) { sb.AppendLine("    Invalid to use"); }
             }
             foreach (var property in properties)
             {
@@ -134,7 +139,7 @@ namespace KindredExtract.Commands
                     sb.AppendLine($"    Present Components: {string.Join(", ", queryDesc.Present.Select(c => c.ToString()))}");
                     sb.AppendLine($"    Options: {queryDesc.Options}");
                 }
-                catch (Exception e) { sb.AppendLine("    Invalid to use"); }
+                catch (Exception) { sb.AppendLine("    Invalid to use"); }
             }
             sb.AppendLine();
             sb.AppendLine();
@@ -143,12 +148,12 @@ namespace KindredExtract.Commands
         [Command("prefabjsons", "pj", description: "Dumps all prefab names and ids to JSON files, grouped by prefix", adminOnly: true)]
         public static void DumpPrefabJsons(ChatCommandContext ctx)
         {
-            var collectionSystem = Core.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
-            var prefabs = collectionSystem.PrefabGuidToNameDictionary;
+            var collectionSystem = Core.TheWorld.GetExistingSystemManaged<PrefabCollectionSystem>();
 
             var prefabDictionaryByPrefix = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
-            foreach (var (prefabGuid, name) in prefabs)
+            foreach (var prefabGuid in collectionSystem._PrefabLookupMap.GuidToEntityMap.GetKeyArray(Allocator.Temp))
             {
+                var name = collectionSystem._PrefabLookupMap.GetName(prefabGuid);
                 // Prefix is either the first part of the name before an underscore or the first camel case word
                 var prefix = name.Split('_')[0];
 
@@ -191,6 +196,155 @@ namespace KindredExtract.Commands
             }
 
             ctx.Reply($"Dumped {prefabDictionaryByPrefix.Count} JSON files to prefabJsons folder");
+        }
+
+
+        [Command("guidpos", adminOnly: true)]
+        public static void DumpGuidPos(ChatCommandContext ctx, int prefab)
+        {
+            // Open up file prefab.csv for writing
+            using (var writer = new StreamWriter($"{prefab}.csv"))
+            {
+                // Write the header
+                writer.WriteLine("x,y,z");
+                foreach (var entity in Helper.GetEntitiesByComponentType<PrefabGUID>())
+                {
+                    var prefabGuid = entity.Read<PrefabGUID>();
+                    if (prefabGuid.GuidHash != prefab) continue;
+                    if (!entity.Has<Translation>()) continue;
+                    var translation = entity.Read<Translation>();
+
+                    // Write the x, y, z coordinates to the file
+
+                    writer.WriteLine($"{translation.Value.x},{translation.Value.y},{translation.Value.z}");
+
+                }
+            }
+        }
+
+        [Command("localization", adminOnly: true)]
+        public static void DumpLocalization(ChatCommandContext ctx)
+        {
+            Core.Localization.SaveLocalization();
+        }
+
+        [Command("prefabnames", adminOnly: true)]
+        public static void DumpPrefabNames(ChatCommandContext ctx)
+        {
+            var prefabCollectionSystem = Core.TheWorld.GetExistingSystemManaged<PrefabCollectionSystem>();
+            var gameDataSystem = Core.TheWorld.GetExistingSystemManaged<GameDataSystem>();
+            Dictionary<int, string> prefabNames = [];
+            foreach (var prefabData in prefabCollectionSystem._PrefabGuidToEntityMap)
+            {
+                var prefabGuid = prefabData.Key;
+
+                var managedCharacter = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedCharacterHUD>(prefabGuid);
+                if (managedCharacter != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} ManagedCharacter");
+                    prefabNames[prefabGuid.GuidHash] = managedCharacter.Name.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedItemData = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedItemData>(prefabGuid);
+                if (managedItemData != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedItemData");
+                    prefabNames[prefabGuid.GuidHash] = managedItemData.Name.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedUnitBloodType = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedUnitBloodTypeData>(prefabGuid);
+                if (managedUnitBloodType != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedUnitBloodType");
+                    prefabNames[prefabGuid.GuidHash] = managedUnitBloodType.Name.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedMissionData = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedMissionData>(prefabGuid);
+                if (managedMissionData != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedMissionData");
+                    prefabNames[prefabGuid.GuidHash] = managedMissionData.Name.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedTechData = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedTechData>(prefabGuid);
+                if (managedTechData != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedTechData");
+                    prefabNames[prefabGuid.GuidHash] = managedTechData.NameKey.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedPerkData = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedPerkData>(prefabGuid);
+                if (managedPerkData != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedPerkData");
+                    prefabNames[prefabGuid.GuidHash] = managedPerkData.Name.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedBlueprintData = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedBlueprintData>(prefabGuid);
+                if (managedBlueprintData != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedBlueprintData");
+                    prefabNames[prefabGuid.GuidHash] = managedBlueprintData.Name.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedAbilityGroupData = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedAbilityGroupData>(prefabGuid);
+                if (managedAbilityGroupData != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedAbilityGroupData");
+                    prefabNames[prefabGuid.GuidHash] = managedAbilityGroupData.Name.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedDataDropGroup = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedDataDropGroup>(prefabGuid);
+                if (managedDataDropGroup != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedDataDropGroup");
+                    prefabNames[prefabGuid.GuidHash] = managedDataDropGroup.Name.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedBuildMenuTagData = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedBuildMenuTagData>(prefabGuid);
+                if (managedBuildMenuTagData != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedBuildMenuTagData");
+                    prefabNames[prefabGuid.GuidHash] = managedBlueprintData.Name.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedBuildMenuGroupData = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedBuildMenuGroupData>(prefabGuid);
+                if (managedBuildMenuGroupData != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedBuildMenuGroupData");
+                    prefabNames[prefabGuid.GuidHash] = managedBuildMenuGroupData.Name.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedBuildMenuCategoryData = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedBuildMenuCategoryData>(prefabGuid);
+                if (managedBuildMenuCategoryData != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedBuildMenuCategoryData");
+                    prefabNames[prefabGuid.GuidHash] = managedBuildMenuCategoryData.Name.Key.ToGuid().ToString();
+                    continue;
+                }
+
+                var managedSpellSchoolData = gameDataSystem.ManagedDataRegistry.GetOrDefaultWithoutLogging<ManagedSpellSchoolData>(prefabGuid);
+                if (managedSpellSchoolData != null)
+                {
+                    Core.Log.LogInfo($"{prefabGuid.LookupName()} managedSpellSchoolData");
+                    prefabNames[prefabGuid.GuidHash] = managedSpellSchoolData.LongName.Key.ToGuid().ToString();
+                    continue;
+                }
+            }
+
+            var json = JsonSerializer.Serialize(prefabNames);
+            File.WriteAllText($"PrefabNames.json", json);
         }
     }
 }

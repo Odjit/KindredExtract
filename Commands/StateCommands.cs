@@ -1,7 +1,5 @@
 using BepInEx.Unity.IL2CPP.Utils.Collections;
-using Il2CppInterop.Runtime;
 using KindredExtract.Commands.Converters;
-using Newtonsoft.Json;
 using ProjectM;
 using ProjectM.CastleBuilding;
 using ProjectM.Network;
@@ -9,19 +7,17 @@ using ProjectM.Physics;
 using ProjectM.Terrain;
 using ProjectM.Tiles;
 using Stunlock.Core;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
-using System.Text.Json;
+using System.Text;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Transforms;
 using UnityEngine;
 using VampireCommandFramework;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace KindredExtract.Commands;
 
@@ -29,6 +25,7 @@ namespace KindredExtract.Commands;
 public class StateCommands
 {
     readonly static string StateFolder = Path.Combine(Directory.GetCurrentDirectory(), "EntityStateFiles");
+    readonly static string ItemDataFolder = Path.Combine(Directory.GetCurrentDirectory(), "ItemData");
 
     struct PasteBinKeys
     {
@@ -39,6 +36,18 @@ public class StateCommands
 
     static Dictionary<ulong, PasteBinKeys> pasteBinKeys = [];
 
+    static bool useProjectMDump;
+
+    [Command("switchdump", description: "Switches between Kindred and ProjectM entity dumping", adminOnly: true)]
+    public static void SwitchDump(ChatCommandContext ctx)
+    {
+        useProjectMDump = !useProjectMDump;
+
+        if (useProjectMDump)
+            ctx.Reply("Swapped to ProjectM entity dumping");
+        else
+            ctx.Reply("Swapped to Kindred entity dumping");
+    }
 
     static void CopyStateFileToPrev(string fileName)
     {
@@ -50,7 +59,8 @@ public class StateCommands
             File.Copy(Path.Combine(StateFolder, fileName), prevFileName);
         }
     }
-    static string OutputEntityState(ChatCommandContext ctx, Entity entity, string fileName = null)
+
+    public static string OutputEntityState(ChatCommandContext ctx = null, Entity entity = default(Entity), string fileName = null)
     {
         Directory.CreateDirectory(StateFolder);
         if (fileName == null)
@@ -99,8 +109,18 @@ public class StateCommands
                 var ic = entity.Read<InventoryConnection>();
                 if (ic.InventoryOwner.Equals(Entity.Null))
                     fileName = $"Inventory_{prefabName}_{entity.Index}_{entity.Version}";
-                else
+                else if (ic.InventoryOwner.Has<PlayerCharacter>())
+                {
                     fileName = $"Inventory_{ic.InventoryOwner.Read<PlayerCharacter>().Name}_{prefabName}_{entity.Index}_{entity.Version}";
+                }
+                else if (ic.InventoryOwner.Has<NameableInteractable>())
+                {
+                    fileName = $"Inventory_{ic.InventoryOwner.Read<NameableInteractable>().Name}_{prefabName}_{entity.Index}_{entity.Version}";
+                }
+                else
+                {
+                    fileName = $"Inventory_{ic.InventoryOwner.Read<PrefabGUID>().LookupName()}_{prefabName}_{entity.Index}_{entity.Version}";
+                }
             }
             else if (entity.Has<VBloodProgressionUnlockData>())
             {
@@ -225,14 +245,34 @@ public class StateCommands
         if (!fileName.EndsWith(".txt"))
             fileName = fileName + ".txt";
 
+        /*// Create folder based on entity lookup name
+        if (entity.Has<PrefabGUID>())
+        {
+            var prefabName = entity.Read<PrefabGUID>().LookupName();
+            var folderPath = Path.Combine(StateFolder, prefabName);
+            Directory.CreateDirectory(folderPath);
+            fileName = Path.Combine(folderPath, fileName);
+        }*/
+
         CopyStateFileToPrev(fileName);
 
-        var entityData = EntityDebug.RetrieveComponentData(entity);
+        string entityData;
+
+        if (!useProjectMDump)
+        {
+            entityData = EntityDebug.RetrieveComponentData(entity);
+        }
+        else
+        {
+            var sb = new Il2CppSystem.Text.StringBuilder();
+            EntityDebuggingUtility.DumpEntity(Core.TheWorld, entity, true, sb);
+            entityData = sb.ToString();
+        }
 
         if (entity.Has<TeamAllies>())
         {
             // Add team allies to the entity data
-            var teamAllies = Core.Server.EntityManager.GetBuffer<TeamAllies>(entity);
+            var teamAllies = Core.TheWorld.EntityManager.GetBuffer<TeamAllies>(entity);
             for (int i = 0; i < teamAllies.Length; ++i)
             {
                 if (teamAllies[i].Value.Equals(Entity.Null)) continue;
@@ -244,7 +284,7 @@ public class StateCommands
             }
         }
 
-        if (pasteBinKeys.TryGetValue(ctx.User.PlatformId, out var keys))
+        if (ctx!=null && pasteBinKeys.TryGetValue(ctx.User.PlatformId, out var keys))
         {
             ctx.Reply($"For {fileName} Paste Bin Response: " + CreatePaste(keys.ApiKey, keys.UserKey, keys.FolderKey, entityData, fileName));
         }
@@ -309,20 +349,44 @@ public class StateCommands
     [Command("player", "p", description: "Removes a player from a clan", adminOnly: true)] // in progress
     public static void PlayerState(ChatCommandContext ctx, OnlinePlayer player = null)
     {
+        var sb = new StringBuilder();
         var characterName = player?.Value.CharacterName ?? ctx.Name;
         var userEntity = player?.Value.UserEntity ?? ctx.Event.SenderUserEntity;
         var charEntity = player?.Value.CharEntity ?? ctx.Event.SenderCharacterEntity;
 
         var userFile = OutputEntityState(ctx, userEntity);
         var charFile = OutputEntityState(ctx, charEntity);
+        sb.Append($"Player '{characterName}' state written to {userFile}, {charFile},");
 
-        var teamEntity = charEntity.Read<TeamReference>().Value;
-        var teamFile = OutputEntityState(ctx, teamEntity);
+        if (charEntity.Has<TeamReference>())
+        {
+            var teamEntity = charEntity.Read<TeamReference>().Value;
+            var teamFile = OutputEntityState(ctx, teamEntity);
+            sb.Append($" {teamFile},");
+        }
 
         var progressionEntity = userEntity.Read<ProgressionMapper>().ProgressionEntity;
         var progressionFile = OutputEntityState(ctx, progressionEntity.GetEntityOnServer());
+        sb.Append($" and {progressionFile}");
 
-        ctx.Reply($"Player '{characterName}' state written to {userFile}, {charFile}, {teamFile}, and {progressionFile}");
+        ctx.Reply(sb.ToString());
+    }
+
+    [Command("slots", "s", description: "Outputs all slots of the player", adminOnly: true)] // in progress
+    public static void SlotsState(ChatCommandContext ctx, OnlinePlayer player = null)
+    {
+        var characterName = player?.Value.CharacterName ?? ctx.Name;
+        var charEntity = player?.Value.CharEntity ?? ctx.Event.SenderCharacterEntity;
+
+        var slots = Core.EntityManager.GetBuffer<AttachedBuffer>(charEntity);
+        foreach (var slot in slots)
+        {
+            if (slot.PrefabGuid != Data.Prefabs.AbilityGroupSlot) continue;
+            var ags = slot.Entity.Read<AbilityGroupSlot>();
+            OutputEntityState(ctx, slot.Entity, fileName: $"{characterName}_Slot_{ags.SlotId}.txt");
+        }
+
+        ctx.Reply($"Player '{characterName}' slots saved");
     }
 
     [Command("inventory", "i", description: "Retrieves inventory state", adminOnly: true)] // in progress
@@ -398,7 +462,7 @@ public class StateCommands
     [Command("prefab", description: "Spits out entity info", adminOnly: true)]
     public static void PrefabState(ChatCommandContext ctx, int? id = null)
     {
-        var collectionSystem = Core.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
+        var collectionSystem = Core.TheWorld.GetExistingSystemManaged<PrefabCollectionSystem>();
         if (id == null)
         {
             var gameObject = new GameObject("PrefabOutputter");
@@ -421,18 +485,27 @@ public class StateCommands
 
     static IEnumerator OutputtingAllPrefabs(ChatCommandContext ctx, PrefabCollectionSystem collectionSystem, GameObject gameObject)
     {
-        var keys = collectionSystem.PrefabGuidToNameDictionary.Keys;
-        foreach (var key in keys)
+        
+        foreach (var entry in collectionSystem._PrefabGuidToEntityMap)
         {
-            if (collectionSystem._PrefabLookupMap.TryGetValue(key, out var prefab))
+            var key = entry.Key;
+            if (collectionSystem._PrefabLookupMap.GuidToEntityMap.TryGetValue(key, out var prefab))
             {
-                var fileName = OutputEntityState(ctx, prefab, key.LookupName() + ".txt");
-                ctx.Reply($"Prefab {key.GuidHash} {key.LookupName()} state written to {fileName}");
+                try
+                { 
+                    var fileName = OutputEntityState(ctx, prefab, key.LookupName() + ".txt");
+                    Core.Log.LogInfo($"Prefab {key.GuidHash} {key.LookupName()} state written to {fileName}");
+                }
+                catch (System.Exception e)
+                {
+                    Core.LogException(e, $"Outputting Prefab {key.LookupName()}");
+                    Core.Log.LogInfo($"Error writing prefab {key.GuidHash} {key.LookupName()}: {e.Message}");
+                }
                 yield return null;
             }
             else
             {
-                ctx.Reply($"Prefab doesn't exist for {key.GuidHash} {key.LookupName()}");
+                Core.Log.LogInfo($"Prefab doesn't exist for {key.GuidHash} {key.LookupName()}");
             }
         }
         GameObject.Destroy(gameObject);
@@ -549,7 +622,7 @@ public class StateCommands
         ctx.Reply($"{entities.Length} world region polygons written to files");
     }
 
-  //  [Command("chunkportals", "cp", description: "Outputs all chunk portals", adminOnly: true)]
+    [Command("chunkportals", "cp", description: "Outputs all chunk portals", adminOnly: true)]
     public static void ChunkPortalState(ChatCommandContext ctx)
     {
         var entities = Helper.GetEntitiesByComponentType<ChunkPortal>(true);
@@ -558,5 +631,47 @@ public class StateCommands
             OutputEntityState(ctx, entity);
         }
         ctx.Reply($"{entities.Length} chunk portals written to files");
+    }
+
+    [Command("buffs", "b", description: "Outputs all buffs of nearby entities", adminOnly: true)]
+    public static void BuffStates(ChatCommandContext ctx, int radius = 5)
+    {
+        var userEntity = ctx.Event.SenderUserEntity;
+        var userPos = userEntity.Read<Translation>().Value;
+        var entities = Helper.GetEntitiesByComponentType<Buff>(true);
+        var num = 0;
+        foreach (var entity in entities)
+        {
+            if (!entity.Has<Attach>()) continue;
+            var attach = entity.Read<Attach>();
+            if (attach.Parent.Equals(Entity.Null)) continue;
+            var pos = attach.Parent.Read<Translation>().Value;
+            if (Vector3.Distance(userPos, pos) > radius) continue;
+            OutputEntityState(ctx, entity);
+            num++;
+        }
+        ctx.Reply($"Wrote out {num} buff states within {radius} units of {userEntity.Index}");
+    }
+
+    [Command("spawnregions", "sr", description: "Outputs all spawn regions", adminOnly: true)]
+    public static void SpawnRegionState(ChatCommandContext ctx)
+    {
+        var entities = Helper.GetEntitiesByComponentType<SpawnRegion>(true);
+        foreach (var entity in entities)
+        {
+            var ltw = entity.Read<LocalToWorld>();
+            var spawnRegion = entity.Read<SpawnRegion>();
+            Core.Log.LogInfo($"{ltw.Position}, {spawnRegion.RespawnDurationMin}, {spawnRegion.RespawnDurationMax}");
+
+            OutputEntityState(ctx, entity);
+        }
+        ctx.Reply($"{entities.Length} spawn regions written to files");
+    }
+
+    [Command("time", description: "Outputs the current time", adminOnly: true)]
+    public static void TimeState(ChatCommandContext ctx)
+    {
+        var time = Core.ServerTime;
+        ctx.Reply($"Current time: {time}");
     }
 }

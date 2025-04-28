@@ -11,7 +11,7 @@ namespace KindredExtract;
 // This is an anti-pattern, move stuff away from Helper not into it
 internal static partial class Helper
 {
-    public static AdminAuthSystem adminAuthSystem = Core.Server.GetExistingSystemManaged<AdminAuthSystem>();
+    public static AdminAuthSystem adminAuthSystem = Core.TheWorld.GetExistingSystemManaged<AdminAuthSystem>();
 
     public static PrefabGUID GetPrefabGUID(Entity entity)
     {
@@ -33,7 +33,7 @@ internal static partial class Helper
     {
         try
         {
-            var gameData = Core.Server.GetExistingSystemManaged<GameDataSystem>();
+            var gameData = Core.TheWorld.GetExistingSystemManaged<GameDataSystem>();
             var itemSettings = AddItemSettings.Create(Core.EntityManager, gameData.ItemHashLookupMap);
             var inventoryResponse = InventoryUtilitiesServer.TryAddItem(itemSettings, recipient, guid, amount);
 
@@ -55,13 +55,11 @@ internal static partial class Helper
         if (includePrefab) options |= EntityQueryOptions.IncludePrefab;
         if (includeDestroyed) options |= EntityQueryOptions.IncludeDestroyTag;
 
-        EntityQueryDesc queryDesc = new()
-        {
-            All = new ComponentType[] { new(Il2CppType.Of<T1>(), ComponentType.AccessMode.ReadWrite) },
-            Options = options
-        };
+        EntityQueryBuilder entityQueryBuilder = new(Allocator.Temp);
+        entityQueryBuilder.AddAll(new(Il2CppType.Of<T1>(), ComponentType.AccessMode.ReadWrite));
+        entityQueryBuilder.WithOptions(options);
 
-        var query = Core.EntityManager.CreateEntityQuery(queryDesc);
+        var query = Core.EntityManager.CreateEntityQuery(ref entityQueryBuilder);
 
         var entities = query.ToEntityArray(Allocator.Temp);
         return entities;
@@ -76,13 +74,12 @@ internal static partial class Helper
         if (includePrefab) options |= EntityQueryOptions.IncludePrefab;
         if (includeDestroyed) options |= EntityQueryOptions.IncludeDestroyTag;
 
-        EntityQueryDesc queryDesc = new()
-        {
-            All = new ComponentType[] { new(Il2CppType.Of<T1>(), ComponentType.AccessMode.ReadWrite), new(Il2CppType.Of<T2>(), ComponentType.AccessMode.ReadWrite) },
-            Options = options
-        };
+        EntityQueryBuilder entityQueryBuilder = new(Allocator.Temp);
+        entityQueryBuilder.AddAll(new(Il2CppType.Of<T1>(), ComponentType.AccessMode.ReadWrite));
+        entityQueryBuilder.AddAll(new(Il2CppType.Of<T2>(), ComponentType.AccessMode.ReadWrite));
+        entityQueryBuilder.WithOptions(options);
 
-        var query = Core.EntityManager.CreateEntityQuery(queryDesc);
+        var query = Core.EntityManager.CreateEntityQuery(ref entityQueryBuilder);
 
         var entities = query.ToEntityArray(Allocator.Temp);
         return entities;

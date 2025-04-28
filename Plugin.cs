@@ -4,6 +4,7 @@ using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using KindredExtract.Models;
 using ProjectM;
+using Unity.Entities;
 using VampireCommandFramework;
 
 namespace KindredExtract;
@@ -59,7 +60,7 @@ public class Plugin : BasePlugin
         // Hack, check to make sure that entities loaded enough because this function
         // will be called when the plugin is first loaded, when this will return 0
         // but also during reload when there is data to initialize with.
-        var collectionSystem = Core.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
+        var collectionSystem = Core.TheWorld.GetExistingSystemManaged<PrefabCollectionSystem>();
         return collectionSystem?.SpawnableNameToPrefabGuidDictionary.Count > 0;
     }
     // // Uncomment for example commmand or delete

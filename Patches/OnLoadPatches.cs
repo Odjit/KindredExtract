@@ -1,11 +1,12 @@
 using HarmonyLib;
 using ProjectM;
 using Stunlock.Network;
+using Unity.Scenes;
 
 
 namespace KindredExtract.Patches;
 
-[HarmonyPatch(typeof(SpawnTeamSystem_OnPersistenceLoad), nameof(SpawnTeamSystem_OnPersistenceLoad.OnUpdate))]
+[HarmonyPatch(typeof(SceneSystem), nameof(SceneSystem.ShutdownStreamingSupport))]
 public static class InitializationPatch
 {
 	[HarmonyPostfix]
