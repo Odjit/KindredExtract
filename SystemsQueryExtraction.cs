@@ -812,9 +812,6 @@ namespace KindredExtract
             DumpCommands.DumpSystemQueries<ProjectM.CastleBuilding.DyeableCastleObjectSystem_DOTS>(Core.TheWorld.GetExistingSystemManaged<ProjectM.CastleBuilding.DyeableCastleObjectSystem_DOTS>(), sb);
             DumpCommands.DumpSystemQueries<ProjectM.CastleBuilding.GenerateCastlePrefabsCollectionSystem>(Core.TheWorld.GetExistingSystemManaged<ProjectM.CastleBuilding.GenerateCastlePrefabsCollectionSystem>(), sb);
             DumpCommands.DumpSystemQueries<ProjectM.CastleBuilding.GenerateCastleSystem>(Core.TheWorld.GetExistingSystemManaged<ProjectM.CastleBuilding.GenerateCastleSystem>(), sb);
-            DumpCommands.DumpSystemQueries<ProjectM.CastleBuilding.LoadCastleConsoleCommandSystem>(Core.TheWorld.GetExistingSystemManaged<ProjectM.CastleBuilding.LoadCastleConsoleCommandSystem>(), sb);
-            DumpCommands.DumpSystemQueries<ProjectM.CastleBuilding.LoadCastleDebugServerSystem>(Core.TheWorld.GetExistingSystemManaged<ProjectM.CastleBuilding.LoadCastleDebugServerSystem>(), sb);
-            DumpCommands.DumpSystemQueries<ProjectM.CastleBuilding.LoadCastleDebugSystem>(Core.TheWorld.GetExistingSystemManaged<ProjectM.CastleBuilding.LoadCastleDebugSystem>(), sb);
             DumpCommands.DumpSystemQueries<ProjectM.CastleBuilding.OnlyShowInBuildModeSystem>(Core.TheWorld.GetExistingSystemManaged<ProjectM.CastleBuilding.OnlyShowInBuildModeSystem>(), sb);
             DumpCommands.DumpSystemQueries<ProjectM.CastleBuilding.RoomRoofDebugSystem>(Core.TheWorld.GetExistingSystemManaged<ProjectM.CastleBuilding.RoomRoofDebugSystem>(), sb);
             DumpCommands.DumpSystemQueries<ProjectM.CastleBuilding.RoomRoofUpdateSystem>(Core.TheWorld.GetExistingSystemManaged<ProjectM.CastleBuilding.RoomRoofUpdateSystem>(), sb);

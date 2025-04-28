@@ -17,9 +17,14 @@ Feel free to reach out to me on discord (odjit) if you have any questions or nee
 ## Commands
 
 ### State Commands
+- `.state switchdump` 
+  - Switches between Kindred and ProjectM entity dumping
 - `.state player (name)` 
   - Dumps the state of a player (User/Char/Team/Progression)
   - shortcut: .s p
+- `.state slots (player name)`
+  - Outputs all slots of the player
+  - shortcut: .s s
 - `.state clan` 
   - Spits out Clan Info 
   - shortcut .s c
@@ -28,11 +33,13 @@ Feel free to reach out to me on discord (odjit) if you have any questions or nee
   - shortcut: .s i
 - `.state door`
   - retrieves door state
+  - shortcut: .s d
 - `.state ownedby (player name)` 
   - Outputs state of entities owned by the player
-  -shortcut: .s o
+  - shortcut: .s o
 - `.state entity (entityID#) (version)`
   - spits out enitiy info of the entity specified by ID and Version
+  - shortcut: .s e
 - `.state prefab (guid)` 
   - spits out prefab info- singular if GUID specified, otherwise all prefabs to a file each with components attached within
 - `.state teams`
@@ -46,21 +53,29 @@ Feel free to reach out to me on discord (odjit) if you have any questions or nee
   - shortcut: .s tm
 - `.state rooms (radius)`
   - gets nearby rooms
-  - shorcut: .s r
+  - shortcut: .s r
 - `.state castleterritory (index#)`
   - outputs a particular or all castle territories.
-  - shorcut: .s ct
+  - shortcut: .s ct
 - `.state mapzones`
   - outputs map zones
-  - shorcut: .s mz
+  - shortcut: .s mz
 - `.state worldregionpolygon`
   - outputs all world region polygons
-  - shorcut: .s wrp
+  - shortcut: .s wrp
+- `.state chunkportals`
+  - outputs all chunk portals
+  - shortcut: .s cp
+- `.state buffs (radius)`
+  - outputs all buffs of nearby entities
+  - shortcut: .s b
+- `.state spawnregions`
+  - outputs all spawn regions
+  - shortcut: .s sr
+- `.state time`
+  - outputs the current server time
 - `.state SetPasteBinKeysNoLog`
   - sets the Pastebin API, userkey, and optional folder keys (This is kind of legacy from a foray into use on lives, but pastebin has limits and the like. I'm leaving it, but its not needed)
-
-
-
 
 ### Entity Commands
 - `.entity teleport (entityID) (version)`
@@ -72,20 +87,30 @@ Feel free to reach out to me on discord (odjit) if you have any questions or nee
 - `.entity destroy (entityID) (Version)`
   - Destroy the specified entity
   - shortcut: .e del
+- `.entity topcount (topNum) (filter)`
+  - Counts the top entities in the world
+  - shortcut: .e tc
 
 ### Dump Commands
 - `.dump prefabs`
   - dumps all prefabs to a file as prefabGuids for a Prefabs.cs file
-  - shortcut: .s dp
+  - shortcut: .dump p
 - `.dump types`
   - Dumps all ECS component types to file (for usage in ComponentExtractors.tt)
-  - shorcut: .s dt
+  - shortcut: .dump t
+- `.dump entityqueries`
+  - Dumps all ECS entity queries to file
+  - shortcut: .dump eq
 - `.dump prefabjsons`
   - dumps all prefab names and IDs to JSON files, grouped by prefix
-  - shortcut: .s dpj
-
-
+  - shortcut: .dump pj
+- `.dump guidpos (prefab)`
+  - Dumps positions of all instances of a prefab to a CSV file
+- `.dump localization`
+  - Dumps localization data
+- `.dump prefabnames`
+  - Dumps prefab names to JSON
   
   
 ## Eventual To-Do/Possible features
-- I add as I require. 
+- I add as I require.
