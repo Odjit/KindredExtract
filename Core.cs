@@ -67,58 +67,9 @@ internal static class Core
 
         _hasInitialized = true;
 		Log.LogInfo($"{nameof(InitializeAfterLoaded)} completed");
-
-        return;
-        AnalyzeAttachedBuffers();
-
-
-
-        Log.LogInfo($"Total entities: {EntityManager.GetAllEntities().Length}");
-
-        Log.LogInfo("Top 10 Prefab Counts:");
-        foreach ((var prefabGUID, var count) in CountPrefabs())
-        {
-            Log.LogInfo($"{prefabGUID.LookupName()} - {count}");
-        }
-        SavePrefabCountToCSV();
     }
+
 	private static bool _hasInitialized = false;
-
-    static void AnalyzeAttachedBuffers()
-    {
-        int totalAttachedBuffers = 0;
-        Dictionary<PrefabGUID, int> attachedBufferCount = new();
-        foreach (var entity in EntityManager.GetAllEntities())
-        {
-            if (EntityManager.HasComponent<AttachedBuffer>(entity))
-            {
-                var buffers = EntityManager.GetBufferReadOnly<AttachedBuffer>(entity);
-                totalAttachedBuffers += buffers.Length;
-                foreach (var buffer in buffers)
-                {
-                    if (buffer.PrefabGuid != PrefabGUID.Empty)
-                    {
-                        if (!attachedBufferCount.ContainsKey(buffer.PrefabGuid))
-                        {
-                            attachedBufferCount.Add(buffer.PrefabGuid, 0);
-                        }
-
-                        attachedBufferCount[buffer.PrefabGuid]++;
-                    }
-                }
-            }
-        }
-
-        // Print out the results in sorted order for the top 50
-        Log.LogInfo("Attached buffer counts:");
-        var sorted = attachedBufferCount.OrderByDescending(x => x.Value).Take(20);
-        foreach (var kvp in sorted)
-        {
-            Log.LogInfo($"{kvp.Key.LookupName()} - {kvp.Value}");
-        }
-        // Total
-        Log.LogInfo($"Total: {totalAttachedBuffers}");
-    }
 
     public static (PrefabGUID, int)[] CountPrefabs(int maxNum=10, string filter=null)
     {

@@ -42,7 +42,6 @@ namespace KindredExtract.Services
         {
             localization.Clear();
 
-            var i = 0;
             foreach(var entry in Localization._LocalizedStrings)
             {
                 localization[entry.Key.ToGuid().ToString()] = entry.Value;

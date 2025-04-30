@@ -1083,7 +1083,7 @@ namespace KindredExtract
     "ProjectM.Network.HailMessage",
     "ProjectM.Network.ReceivedPacket",
     "ProjectM.Network.PacketBookkeeperSystemData",
-    "ProjectM.Network.PrioritizeSystemData",
+    //"ProjectM.Network.PrioritizeSystemData",
     "ProjectM.Network.LogPrioritization",
     "ProjectM.Network.SetupNetworkIdSystem.Singleton",
     "ProjectM.Network.SpellModSyncSystem_ServerData",
