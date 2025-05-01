@@ -11,7 +11,7 @@ namespace KindredExtract.Commands;
 [CommandGroup("entity", "e")]
 internal static class EntityCommands
 {
-	[Command("teleport", "tp", description: "Teleport to the specified entity.")]
+	[Command("teleport", "tp", description: "Teleport to the specified entity.", adminOnly: true)]
 	public static void TeleportToEntity(ChatCommandContext ctx, int entityId, int version = 1)
 	{
 		var playerEntity = ctx.Event.SenderCharacterEntity;
@@ -54,7 +54,7 @@ internal static class EntityCommands
 		ctx.Reply($"Teleported to {name} at {pos}");
 	}
 
-	[Command("despawn", "d", description: "Despawn the specified entity.")]
+	[Command("despawn", "d", description: "Despawn the specified entity.", adminOnly: true)]
 	public static void DespawnEntity(ChatCommandContext ctx, int entityId, int version = 1)
 	{
 		var targetEntity = new Entity { Index = entityId, Version = version };
@@ -76,7 +76,7 @@ internal static class EntityCommands
 		ctx.Reply($"Despawned {name}");
 	}
 
-	[Command("destroy", "del", description: "Destroy the specified entity.")]
+	[Command("destroy", "del", description: "Destroy the specified entity.", adminOnly: true)]
 	public static void DestroyEntity(ChatCommandContext ctx, int entityId, int version = 1)
 	{
 		var targetEntity = new Entity { Index = entityId, Version = version };
@@ -100,7 +100,7 @@ internal static class EntityCommands
 		ctx.Reply($"Destroyed {name}");
 	}
 
-	[Command("topcount", "tc", description: "Counts the top entities in the world")]
+	[Command("topcount", "tc", description: "Counts the top entities in the world", adminOnly: true)]
     public static void TopEntityCount(ChatCommandContext ctx, int topNum=10, string filter=null)
     {
         foreach ((var prefabGUID, var count) in Core.CountPrefabs(topNum, filter))

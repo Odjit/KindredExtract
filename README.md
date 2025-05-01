@@ -7,12 +7,16 @@ It is meant for developers who want to use a tool to check things around them fo
 It will print out a lot of files to your DedicatedServer directory. This action isn't great on live servers.
 Keep ranges tight, as there are a lot more things around you than you would think.
 
+**Note:** Dependencies are not working while we are in a test period. Please refer to the **Installation** section for more information.
 
 ---
 Also, thanks to the V Rising modding and server communities for ideas and requests!
 Feel free to reach out to me on discord (odjit) if you have any questions or need help with the mod.
 
 [V Rising Modding Discord](https://vrisingmods.com/discord)
+
+
+
 
 ## Commands
 
@@ -114,3 +118,21 @@ Feel free to reach out to me on discord (odjit) if you have any questions or nee
   
 ## Eventual To-Do/Possible features
 - I add as I require.
+
+## Installation
+<details> <summary>Steps</summary>
+
+1. Install BepInEx, which is required for modding VRising. Follow the instructions provided at [BepInEx Installation Guide](https://wiki.vrisingmods.com/user/bepinex_install.html) to set it up correctly in your VRising game directory.
+   - **Note:** Until BepInEx is updated for 1.1, please do not use the thunderstore version. Get the correct testing version https://wiki.vrisingmods.com/user/game_update.html.
+
+2. Download the plugin along with its dependencies (VCF). Ensure you select the correct versions that are compatible with your game.
+   - **Note:** Again, until dependencies are updated for 1.1, please do not use the thunderstore version. Get the correct testing version https://wiki.vrisingmods.com/user/game_update.html.
+
+3. After downloading, locate the .dll files for this plugin and its dependencies. Move or copy these .dll files into the `BepInEx\Plugins` directory within your VRising installation folder.
+
+   - **Single Player Note:**
+     - If you are playing in single player mode, you will need to install [ServerLaunchFix](https://thunderstore.io/c/v-rising/p/Mythic/ServerLaunchFix/). This is a server-side mod that is essential for making the commands work properly on the client side server. Make sure to download and place it in the same `BepInEx\Plugins` directory.
+
+4. Launch the Game: Start VRising. If everything has been set up correctly, the plugin should now be active in the game.
+
+</details>
