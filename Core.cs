@@ -43,6 +43,10 @@ internal static class Core
 
 	public static PrefabService Prefabs { get; internal set; }
 
+    public static EcsSystemTypesService EcsSystemTypesService { get; } = new(Log);
+    public static EcsSystemFinderService EcsSystemFinderService { get; } = new(EcsSystemTypesService, Log);
+    public static EcsSystemHierarchyService EcsSystemHierarchyService { get; } = new(EcsSystemFinderService, Log);
+
 
 
     static MonoBehaviour monoBehaviour;
