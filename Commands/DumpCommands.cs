@@ -353,5 +353,78 @@ namespace KindredExtract.Commands
             ctx.Reply($"Dumped system hierarchy files to folder {dir}");
         }
         
+        [Command("archetypes", "a", description: "Dumps all ECS archetypes to file", adminOnly: true)]
+        public static void DumpArchetypes(ChatCommandContext ctx)
+        {
+            var sb = new StringBuilder();
+            var entityManager = Core.EntityManager;
+            
+            sb.AppendLine("ECS Archetypes Dump");
+            sb.AppendLine("===================");
+            sb.AppendLine();
+            
+            // Get all entities to analyze their archetypes
+            var allEntities = entityManager.GetAllEntities(Allocator.Temp);
+            var archetypeMap = new Dictionary<int, ArchetypeInfo>();
+            
+            foreach (var entity in allEntities)
+            {
+                var archetype = entityManager.GetChunk(entity).Archetype;
+                var archetypeHash = archetype.GetHashCode();
+                
+                if (!archetypeMap.ContainsKey(archetypeHash))
+                {
+                    var componentTypes = archetype.GetComponentTypes(Allocator.Temp);
+                    archetypeMap[archetypeHash] = new ArchetypeInfo
+                    {
+                        Hash = archetypeHash,
+                        ComponentTypes = componentTypes.ToArray(),
+                        EntityCount = 0
+                    };
+                    componentTypes.Dispose();
+                }
+                
+                archetypeMap[archetypeHash].EntityCount++;
+            }
+            
+            allEntities.Dispose();
+            
+            // Sort archetypes by entity count (descending)
+            var sortedArchetypes = archetypeMap.Values.OrderByDescending(a => a.EntityCount).ToList();
+            
+            sb.AppendLine($"Total Archetypes: {sortedArchetypes.Count}");
+            sb.AppendLine($"Total Entities: {sortedArchetypes.Sum(a => a.EntityCount)}");
+            sb.AppendLine();
+            sb.AppendLine("----------------------------------------");
+            sb.AppendLine();
+            
+            int archetypeIndex = 1;
+            foreach (var archetypeInfo in sortedArchetypes)
+            {
+                sb.AppendLine($"Archetype #{archetypeIndex} (Hash: {archetypeInfo.Hash})");
+                sb.AppendLine($"  Entity Count: {archetypeInfo.EntityCount}");
+                sb.AppendLine($"  Component Count: {archetypeInfo.ComponentTypes.Length}");
+                sb.AppendLine("  Components:");
+                
+                foreach (var componentType in archetypeInfo.ComponentTypes.OrderBy(c => c.ToString()))
+                {
+                    sb.AppendLine($"    - {componentType}");
+                }
+                
+                sb.AppendLine();
+                archetypeIndex++;
+            }
+            
+            var filePath = "archetypes.txt";
+            File.WriteAllText(filePath, sb.ToString());
+            ctx.Reply($"Dumped {sortedArchetypes.Count} archetypes to {filePath}");
+        }
+        
+        private class ArchetypeInfo
+        {
+            public int Hash { get; set; }
+            public ComponentType[] ComponentTypes { get; set; }
+            public int EntityCount { get; set; }
+        }
     }
 }
