@@ -834,7 +834,6 @@ namespace KindredExtract
     "ProjectM.Network.RandomizeCustomization2DebugEvent",
     "ProjectM.Network.ChangeHealthDebugEvent",
     "ProjectM.Network.ChangeBloodDebugEvent",
-    "ProjectM.Network.ConsumeBloodDebugEvent",
     "ProjectM.Network.ChangeVBloodDebugEvent",
     "ProjectM.Network.TeleportToVBloodDebugEvent",
     "ProjectM.Network.UnlockAllVBloodAbilities",
