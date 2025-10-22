@@ -803,7 +803,6 @@
             EntityDebug.RegisterExtractor<ProjectM.Network.RandomizeCustomization2DebugEvent>();
             EntityDebug.RegisterExtractor<ProjectM.Network.ChangeHealthDebugEvent>();
             EntityDebug.RegisterExtractor<ProjectM.Network.ChangeBloodDebugEvent>();
-            EntityDebug.RegisterExtractor<ProjectM.Network.ConsumeBloodDebugEvent>();
             EntityDebug.RegisterExtractor<ProjectM.Network.ChangeVBloodDebugEvent>();
             EntityDebug.RegisterExtractor<ProjectM.Network.TeleportToVBloodDebugEvent>();
             EntityDebug.RegisterExtractor<ProjectM.Network.UnlockAllVBloodAbilities>();
